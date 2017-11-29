@@ -14,7 +14,7 @@ SUG_UNK = 'UNK'
 class IllFormedNgramException(Exception): pass
 
 def format_row(row):
-    print ('[%s]' % '|'.join(row))
+    return ('[%s]' % '|'.join(row))
 
 def format_col(col):
     for val in col:
@@ -39,6 +39,9 @@ def rshift(arr, s, e, shift_by):
 #rshift(test_arr, 6, 7, 2)
 #rshift(test_arr, 4, 7, 2)
 #rshift(test_arr, 0, 7, 2)
+test_arr = ['X', 'X', 'X', ' ', 'X', ' ', ' ', ' ', ' ', ' ']
+print(rshift(test_arr, 4, 4, 5))
+print(rshift(test_arr, 0, 4, 5))
 
 class PossibleStates(object):
     def __init__(self, length, arr_values, typ):
@@ -143,6 +146,69 @@ class Nonogram(object):
             s.append(row_s)
         return '\n'.join(s)
 
+    def solve(self):
+        i = 1
+        while not self.is_solved():
+            print("=====Iteration %d=====" % i)
+            i+=1
+            self.mark_board()
+            print(self)
+            self.purge_states()
+            print(self)
+            print()
+
+    def is_solved(self):
+        numrows = len(self.across)
+        numcols = len(self.down)
+        for i in range(numrows):
+            for j in range(numcols):
+                if self.board[i][j] == SQ_EMPTY:
+                    return False
+        return True
+
+    def purge_states(self):
+        numrows = len(self.across)
+        numcols = len(self.down)
+        for i in range(numrows):
+            row_state = self.row_states[i]
+            print('Possible states for row (!!!):', i, [format_row(r) for r in row_state.states])
+            states_to_delete = []
+            for state in row_state.states:
+                to_delete = False
+                for j in range(len(state)):
+                    state_sq = state[j]
+                    board_sq = self.board[i][j]
+                    if (state_sq == SQ_FILLED and board_sq == SQ_MARKED) or \
+                      (state_sq == SQ_EMPTY and board_sq == SQ_FILLED):
+                        to_delete = True
+                        break
+                if to_delete:
+                    states_to_delete.append(state)
+            #print('To delete for row:', i, states_to_delete)
+            for state in states_to_delete:
+                row_state.states.remove(state)
+            print('Possible states for row after deletion:', i, [format_row(r) for r in row_state.states])
+
+        for i in range(numcols):
+            col_state = self.col_states[i]
+            states_to_delete = []
+            for state in col_state.states:
+                to_delete = False
+                for j in range(len(state)):
+                    state_sq = state[j]
+                    board_sq = self.board[j][i]
+                    if (state_sq == SQ_FILLED and board_sq == SQ_MARKED) or \
+                      (state_sq == SQ_EMPTY and board_sq == SQ_FILLED):
+                        to_delete = True
+                        break
+                if to_delete:
+                    states_to_delete.append(state)
+            #print('To delete for col:', i, states_to_delete)
+            for state in states_to_delete:
+                col_state.states.remove(state)
+            print('Possible states for col:', i, [format_row(r) for r in col_state.states])
+
+
     def mark_board(self):
         numrows = len(self.across)
         numcols = len(self.down)
@@ -183,6 +249,5 @@ class Nonogram(object):
             return obj
 
 if __name__ == '__main__':
-    n = Nonogram.from_json_file('puzzle1.json')
-    n.mark_board()
-    print(n)
+    n = Nonogram.from_json_file('puzzle3.json')
+    #n.solve()
