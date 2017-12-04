@@ -1,3 +1,4 @@
+import argparse
 import json
 
 TYPE_ACROSS = 0
@@ -97,24 +98,6 @@ def gen_all_states(starter_arr, range_start, range_end):
 
     return new_states
 
-
-
-#test_arr = ['X', 'X', 'X', ' ', 'X', ' ', 'X', 'X', ' ', ' ']
-#rshift(test_arr, 6, 7, 2)
-#rshift(test_arr, 4, 7, 2)
-#rshift(test_arr, 0, 7, 2)
-
-#test_arr = ['*', ' ', '*', ' ', '*', ' ', ' ', ' ', ' ', ' ']
-#states = list(set(gen_all_states(test_arr, 5, 9)))
-#test_arr = ['*', '*', '*', ' ', '*', ' ', ' ', ' ', ' ', ' ']
-#states = list(set(gen_all_states(test_arr, 5, 9)))
-#states.sort(reverse=True)
-#for state in states:
-#    print(format_row(state))
-
-#print(rshift(test_arr, 4, 4, 5))
-#print(rshift(test_arr, 0, 4, 5))
-
 class PossibleStates(object):
     def __init__(self, length, arr_values, typ):
         self.arr_values = arr_values
@@ -124,15 +107,6 @@ class PossibleStates(object):
 
         self.create_starter_arr()
         self.gen_rshifted_arrays()
-
-        '''
-        print("Row/Col:", self.starter_arr)
-        for state in self.states:
-            if self.typ == TYPE_ACROSS:
-                format_row(state)
-            else:
-                format_col(state)
-        '''
 
     def get_all_squares(self, index):
         return tuple(state[index] for state in self.states)
@@ -169,19 +143,6 @@ class PossibleStates(object):
                 start_indexes.append(s_index)
                 end_indexes.append(e_index)
 
-        '''
-        e = end_indexes[-1]
-        shift_by = len(self.starter_arr)-e-1
-        #shift_by == 0?
-        if shift_by <= 0:
-            return
-        #print("starter_arr:", self.starter_arr)
-        for i in reversed(range(len(start_indexes))):
-            s = start_indexes[i]
-            #print("s:", s, "e:", e, "shift_by:", shift_by)
-            new_arrs = rshift(self.starter_arr, s, e, shift_by)
-            self.states.extend(new_arrs)
-        '''
         r_start = end_indexes[-1]+1
         r_end = len(self.starter_arr)-1
         arrs = list(set(gen_all_states(self.starter_arr, r_start, r_end)))
@@ -328,6 +289,12 @@ class Nonogram(object):
             return obj
 
 if __name__ == '__main__':
-    n = Nonogram.from_json_file('puzzle5.json')
+    parser = argparse.ArgumentParser(description='Solves nonograms')
+    parser.add_argument('puzzle', nargs=1)
+    args = parser.parse_args()
+
+    puzzle = args.puzzle[0]
+
+    n = Nonogram.from_json_file(puzzle)
     n.solve()
     print(n)
