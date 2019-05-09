@@ -15,3 +15,6 @@ class DictLikeStruct:
         if a in self.__dict__:
             return self.__dict__[a]
         raise AttributeError('No such attribute: %s' % a)
+
+    def toDict(self):
+        return dict(self.__dict__)
