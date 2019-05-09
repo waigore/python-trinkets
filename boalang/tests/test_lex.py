@@ -80,5 +80,21 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 
+    def test_lexIdentifiers(self):
+        code = """yyyy = x + 1 + x2;"""
+
+        l = Lexer(code)
+        tokens = l.lex()
+        self.assertEqual(tokens[0].tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
+
+        yyyy = tokens[0]
+        self.assertEqual(yyyy.literal, 'yyyy')
+
+        x = tokens[2]
+        self.assertEqual(x.literal, 'x')
+
+        x2 = tokens[6]
+        self.assertEqual(x2.literal, 'x2')
+
 if __name__ == '__main__':
     unittest.main()

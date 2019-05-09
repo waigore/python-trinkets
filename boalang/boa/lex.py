@@ -89,7 +89,7 @@ class Lexer(object):
 
     def readIdentifier(self):
         pos = self.position
-        while self.isIdentifierChar(self.ch):
+        while self.isIdentifierChar(self.ch) or self.isDigit(self.ch):
             self.readChar()
 
         return self.input[pos:self.position]
