@@ -3,12 +3,15 @@ from .token import TOKEN_TYPES
 
 NODE_TYPE_STATEMENT = "STATEMENT"
 NODE_TYPE_EXPRESSION = "EXPRESSION"
-NODE_TYPE_IDENTIFIER = "IDENTIFIER"
-NODE_TYPE_INT_LITERAL = "INT_LITERAL"
 
 STATEMENT_TYPE_LET = "LET_STATEMENT"
 STATEMENT_TYPE_RETURN = "RETURN_STATEMENT"
 STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
+
+EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
+EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
+EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
+EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
 
 class Node(object):
     def __init__(self, token, typ):
@@ -32,8 +35,9 @@ class Statement(Node):
         return '[%s t=%s v=%s]' % (self.statementType, self.token, self.value)
 
 class Expression(Node):
-    def __init__(self, token):
+    def __init__(self, expressionType, token):
         super(Expression, self).__init__(token, NODE_TYPE_EXPRESSION)
+        self.expressionType = expressionType
 
 class LetStatement(Statement):
     def __init__(self, token, identifier, value):
@@ -61,17 +65,17 @@ class ExpressionStatement(Statement):
     def __repr__(self):
         return str(self.expression)
 
-class Identifier(Node):
+class Identifier(Expression):
     def __init__(self, token, value=None):
-        super(Identifier, self).__init__(token, NODE_TYPE_IDENTIFIER)
+        super(Identifier, self).__init__(EXPRESSION_TYPE_IDENT, token)
         self.value = value if value is not None else token.literal
 
     def __repr__(self):
         return str(self.value)
 
-class IntegerLiteral(Node):
+class IntegerLiteral(Expression):
     def __init__(self, token, value):
-        super(IntegerLiteral, self).__init__(token, NODE_TYPE_INT_LITERAL)
+        super(IntegerLiteral, self).__init__(EXPRESSION_TYPE_INT_LIT, token)
         self.value = value
 
     def __repr__(self):
@@ -79,12 +83,22 @@ class IntegerLiteral(Node):
 
 class PrefixExpression(Expression):
     def __init__(self, token, right):
-        super(PrefixExpression, self).__init__(token)
+        super(PrefixExpression, self).__init__(EXPRESSION_TYPE_PREFIX, token)
         self.operator = token.literal
         self.right = right
 
     def __repr__(self):
         return '(%s%s)' %(self.operator, self.right)
+
+class InfixExpression(Expression):
+    def __init__(self, token, left, right):
+        super(InfixExpression, self).__init__(EXPRESSION_TYPE_INFIX, token)
+        self.operator = token.literal
+        self.left = left
+        self.right = right
+
+    def __repr__(self):
+        return '(%s %s %s)' % (self.left, self.operator, self.right)
 
 class Program(object):
     def __init__(self):

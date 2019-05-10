@@ -12,19 +12,29 @@ PRODUCT = 5
 PREFIX = 6
 CALL = 7
 
-PRECEDENCE = DictLikeStruct({
-    LOWEST: LOWEST,
-    EQUALS: EQUALS,
-    LESSGREATER: LESSGREATER,
-    SUM: SUM,
-    PRODUCT: PRODUCT,
-    PREFIX: PREFIX,
-    CALL: CALL,
+PRECEDENCE_LIST = [
+    LOWEST, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL
+]
+
+PRECEDENCE_MAP = DictLikeStruct({
+    TOKEN_TYPES.TOKEN_TYPE_EQ: EQUALS,
+    TOKEN_TYPES.TOKEN_TYPE_NEQ: EQUALS,
+    TOKEN_TYPES.TOKEN_TYPE_LT: LESSGREATER,
+    TOKEN_TYPES.TOKEN_TYPE_GT: LESSGREATER,
+    TOKEN_TYPES.TOKEN_TYPE_LTEQ: LESSGREATER,
+    TOKEN_TYPES.TOKEN_TYPE_GTEQ: LESSGREATER,
+    TOKEN_TYPES.TOKEN_TYPE_PLUS: SUM,
+    TOKEN_TYPES.TOKEN_TYPE_MINUS: SUM,
+    TOKEN_TYPES.TOKEN_TYPE_SLASH: PRODUCT,
+    TOKEN_TYPES.TOKEN_TYPE_ASTERISK: PRODUCT,
 })
 
 class ParserError(object):
     def __init__(self, msg):
         self.msg = msg
+
+    def __repr__(self):
+        return '[ParserError "%s"]' % self.msg
 
 class Parser(object):
     def __init__(self, input):
@@ -54,6 +64,16 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_PLUS, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_ASTERISK, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_SLASH, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_EQ, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_NEQ, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LT, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_GT, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LTEQ, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_GTEQ, self.parseInfixExpression)
 
     def registerPrefix(self, tokenType, fn):
         self.prefixParseFns[tokenType.name] = fn
@@ -66,6 +86,16 @@ class Parser(object):
 
     def peekTokenIs(self, tokenType):
         return self.peekToken.tokenType == tokenType
+
+    def peekPrecedence(self):
+        if self.peekToken.tokenType in PRECEDENCE_MAP:
+            return PRECEDENCE_MAP[self.peekToken.tokenType]
+        return LOWEST
+
+    def curPrecedence(self):
+        if self.curToken.tokenType in PRECEDENCE_MAP:
+            return PRECEDENCE_MAP[self.curToken.tokenType]
+        return LOWEST
 
     def expectPeek(self, tokenType):
         if self.peekTokenIs(tokenType):
@@ -120,30 +150,37 @@ class Parser(object):
         if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
             return None
 
-        while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+        self.nextToken()
+
+        value = self.parseExpression(LOWEST)
+        statement = LetStatement(letToken, ident, value)
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
 
-        statement = LetStatement(letToken, ident, None)
         return statement
 
     def parseReturnStatement(self):
         returnToken = self.curToken
+
         self.nextToken()
 
-        while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+        returnValue = self.parseExpression(LOWEST)
+        statement = ReturnStatement(returnToken, returnValue)
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
 
-        statement = ReturnStatement(returnToken, None)
         return statement
 
     def parseExpressionStatement(self):
         exprToken = self.curToken
         expr = self.parseExpression(LOWEST)
+        statement = ExpressionStatement(exprToken, expr)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
 
-        statement = ExpressionStatement(exprToken, expr)
         return statement
 
     def parseExpression(self, precedence):
@@ -154,6 +191,16 @@ class Parser(object):
 
         leftExp = prefix()
 
+        while not self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON) \
+                and precedence < self.peekPrecedence():
+            infix = self.getInfixParseFn(self.peekToken.tokenType)
+            if infix is None:
+                return leftExp
+
+            self.nextToken()
+
+            leftExp = infix(leftExp)
+
         return leftExp
 
     def parsePrefixExpression(self):
@@ -162,8 +209,17 @@ class Parser(object):
         self.nextToken()
 
         right = self.parseExpression(PREFIX)
-        expr = PrefixExpression(exprToken, exprToken, right)
-        
+        expr = PrefixExpression(exprToken, right)
+
+        return expr
+
+    def parseInfixExpression(self, left):
+        exprToken = self.curToken
+
+        precedence = self.curPrecedence()
+        self.nextToken()
+        right = self.parseExpression(precedence)
+        expr = InfixExpression(exprToken, left, right)
         return expr
 
     def parseIdentifier(self):

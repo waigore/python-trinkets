@@ -28,21 +28,22 @@ TOKEN_TYPE_FUNCTION = 'TOKEN_TYPE_FUNCTION'
 TOKEN_TYPE_LET = 'TOKEN_TYPE_LET'
 TOKEN_TYPE_IF = 'TOKEN_TYPE_IF'
 TOKEN_TYPE_RETURN = 'TOKEN_TYPE_RETURN'
+TOKEN_TYPE_TRUE = 'TOKEN_TYPE_TRUE'
+TOKEN_TYPE_FALSE = 'TOKEN_TYPE_FALSE'
 
 KEYWORD_FN = 'fn'
 KEYWORD_FUNCTION = 'function'
 KEYWORD_LET = 'let'
 KEYWORD_IF = 'if'
 KEYWORD_RETURN = 'return'
+KEYWORD_TRUE = 'true'
+KEYWORD_FALSE = 'false'
 
 class TokenType(object):
     def __init__(self, name, value, isLiteral=True):
         self.name = name
         self.value = value
         self.isLiteral = isLiteral
-
-    def __eq__(self, other):
-        return self.name == other.name and self.value == other.value
 
     def __repr__(self):
         return '[%s "%s"]' % (self.name, self.value)
@@ -64,6 +65,8 @@ TOKEN_TYPES = DictLikeStruct({
     TOKEN_TYPE_LET: TokenType(TOKEN_TYPE_LET, 'LET', isLiteral=False),
     TOKEN_TYPE_IF: TokenType(TOKEN_TYPE_IF, 'IF', isLiteral=False),
     TOKEN_TYPE_RETURN: TokenType(TOKEN_TYPE_RETURN, 'RETURN', isLiteral=False),
+    TOKEN_TYPE_TRUE: TokenType(TOKEN_TYPE_TRUE, 'TRUE', isLiteral=False),
+    TOKEN_TYPE_FALSE: TokenType(TOKEN_TYPE_FALSE, 'FALSE', isLiteral=False),
     TOKEN_TYPE_ASSIGN: TokenType(TOKEN_TYPE_ASSIGN, '='),
     TOKEN_TYPE_EQ: TokenType(TOKEN_TYPE_EQ, '=='),
     TOKEN_TYPE_NEQ: TokenType(TOKEN_TYPE_NEQ, '!='),
@@ -91,6 +94,8 @@ KEYWORDS =  DictLikeStruct({
     KEYWORD_LET: TOKEN_TYPE_LET,
     KEYWORD_IF: TOKEN_TYPE_IF,
     KEYWORD_RETURN: TOKEN_TYPE_RETURN,
+    KEYWORD_TRUE: TOKEN_TYPE_TRUE,
+    KEYWORD_FALSE: TOKEN_TYPE_FALSE,
 })
 
 def allOperatorTypes():
