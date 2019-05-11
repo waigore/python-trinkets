@@ -1,5 +1,6 @@
 from .parse import Parser
 from .lex import Lexer
+from .evaluator import boaEval
 
 try:
     import readline
@@ -28,3 +29,7 @@ class Repl(object):
                 for err in p.errors:
                     print(p.msg)
                 continue
+
+            evaluated = boaEval(program)
+            if evaluated is not None:
+                print(evaluated.inspect())

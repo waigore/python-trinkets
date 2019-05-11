@@ -1,6 +1,7 @@
 
 from .token import TOKEN_TYPES
 
+NODE_TYPE_PROGRAM = "PROGRAM"
 NODE_TYPE_STATEMENT = "STATEMENT"
 NODE_TYPE_EXPRESSION = "EXPRESSION"
 
@@ -154,8 +155,9 @@ class CallExpression(Expression):
     def __repr__(self):
         return '%s(%s)' % (self.function, ','.join([str(arg) for arg in self.arguments]))
 
-class Program(object):
+class Program(Node):
     def __init__(self):
+        super(Program, self).__init__(None, NODE_TYPE_PROGRAM)
         self.statements = []
 
     def addStatement(self, s):
@@ -168,4 +170,4 @@ class Program(object):
         return self.statements[0].tokenLiteral
 
     def __repr__(self):
-        return ''.join(self.statements)
+        return ''.join([str(statement) for statement in self.statements])
