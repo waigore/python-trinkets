@@ -85,16 +85,72 @@ class TestLexing(unittest.TestCase):
 
         l = Lexer(code)
         tokens = l.lex()
-        self.assertEqual(tokens[0].tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
 
         yyyy = tokens[0]
+        self.assertEqual(yyyy.tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
         self.assertEqual(yyyy.literal, 'yyyy')
 
         x = tokens[2]
+        self.assertEqual(x.tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
         self.assertEqual(x.literal, 'x')
 
         x2 = tokens[6]
+        self.assertEqual(x2.tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
         self.assertEqual(x2.literal, 'x2')
+
+    def test_lexBooleans(self):
+        code = """return true; return false;"""
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_RETURN,
+            TOKEN_TYPES.TOKEN_TYPE_TRUE,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_RETURN,
+            TOKEN_TYPES.TOKEN_TYPE_FALSE,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
+
+    def test_lexNot(self):
+        code = """not a; ! a; nota; """
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_NOT,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
+
+    def test_lexAndOr(self):
+        code = """a and b; aandb; a or b; """
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_AND,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_OR,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
 
 if __name__ == '__main__':
     unittest.main()

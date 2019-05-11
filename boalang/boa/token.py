@@ -30,6 +30,10 @@ TOKEN_TYPE_IF = 'TOKEN_TYPE_IF'
 TOKEN_TYPE_RETURN = 'TOKEN_TYPE_RETURN'
 TOKEN_TYPE_TRUE = 'TOKEN_TYPE_TRUE'
 TOKEN_TYPE_FALSE = 'TOKEN_TYPE_FALSE'
+TOKEN_TYPE_NOT = 'TOKEN_TYPE_NOT'
+TOKEN_TYPE_IN = 'TOKEN_TYPE_IN'
+TOKEN_TYPE_AND = 'TOKEN_TYPE_AND'
+TOKEN_TYPE_OR = 'TOKEN_TYPE_OR'
 
 KEYWORD_FN = 'fn'
 KEYWORD_FUNCTION = 'function'
@@ -38,6 +42,10 @@ KEYWORD_IF = 'if'
 KEYWORD_RETURN = 'return'
 KEYWORD_TRUE = 'true'
 KEYWORD_FALSE = 'false'
+KEYWORD_NOT = 'not'
+KEYWORD_IN = 'in'
+KEYWORD_AND = 'and'
+KEYWORD_OR = 'or'
 
 class TokenType(object):
     def __init__(self, name, value, isLiteral=True):
@@ -67,6 +75,10 @@ TOKEN_TYPES = DictLikeStruct({
     TOKEN_TYPE_RETURN: TokenType(TOKEN_TYPE_RETURN, 'RETURN', isLiteral=False),
     TOKEN_TYPE_TRUE: TokenType(TOKEN_TYPE_TRUE, 'TRUE', isLiteral=False),
     TOKEN_TYPE_FALSE: TokenType(TOKEN_TYPE_FALSE, 'FALSE', isLiteral=False),
+    TOKEN_TYPE_NOT: TokenType(TOKEN_TYPE_NOT, 'NOT', isLiteral=False),
+    TOKEN_TYPE_IN: TokenType(TOKEN_TYPE_IN, 'IN', isLiteral=False),
+    TOKEN_TYPE_AND: TokenType(TOKEN_TYPE_AND, 'AND', isLiteral=False),
+    TOKEN_TYPE_OR: TokenType(TOKEN_TYPE_OR, 'OR', isLiteral=False),
     TOKEN_TYPE_ASSIGN: TokenType(TOKEN_TYPE_ASSIGN, '='),
     TOKEN_TYPE_EQ: TokenType(TOKEN_TYPE_EQ, '=='),
     TOKEN_TYPE_NEQ: TokenType(TOKEN_TYPE_NEQ, '!='),
@@ -96,6 +108,10 @@ KEYWORDS =  DictLikeStruct({
     KEYWORD_RETURN: TOKEN_TYPE_RETURN,
     KEYWORD_TRUE: TOKEN_TYPE_TRUE,
     KEYWORD_FALSE: TOKEN_TYPE_FALSE,
+    KEYWORD_NOT: TOKEN_TYPE_NOT,
+    KEYWORD_IN: TOKEN_TYPE_IN,
+    KEYWORD_AND: TOKEN_TYPE_AND,
+    KEYWORD_OR: TOKEN_TYPE_OR,
 })
 
 def allOperatorTypes():

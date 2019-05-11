@@ -88,7 +88,8 @@ class PrefixExpression(Expression):
         self.right = right
 
     def __repr__(self):
-        return '(%s%s)' %(self.operator, self.right)
+        isKeyword = not self.token.tokenType.isLiteral
+        return '(%s%s%s)' %(self.operator, ' ' if isKeyword else '', self.right)
 
 class InfixExpression(Expression):
     def __init__(self, token, left, right):

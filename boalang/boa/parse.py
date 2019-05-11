@@ -5,20 +5,24 @@ from .token import TOKEN_TYPES
 from .util import DictLikeStruct
 
 LOWEST = 1
-EQUALS = 2
-LESSGREATER = 3
-SUM = 4
-PRODUCT = 5
-PREFIX = 6
-CALL = 7
+BOOL = 2
+EQUALS = 3
+LESSGREATER = 4
+SUM = 5
+PRODUCT = 6
+PREFIX = 7
+CALL = 8
 
 PRECEDENCE_LIST = [
-    LOWEST, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL
+    LOWEST, BOOL, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL
 ]
 
 PRECEDENCE_MAP = DictLikeStruct({
+    TOKEN_TYPES.TOKEN_TYPE_AND: BOOL,
+    TOKEN_TYPES.TOKEN_TYPE_OR: BOOL,
     TOKEN_TYPES.TOKEN_TYPE_EQ: EQUALS,
     TOKEN_TYPES.TOKEN_TYPE_NEQ: EQUALS,
+    TOKEN_TYPES.TOKEN_TYPE_IN: EQUALS,
     TOKEN_TYPES.TOKEN_TYPE_LT: LESSGREATER,
     TOKEN_TYPES.TOKEN_TYPE_GT: LESSGREATER,
     TOKEN_TYPES.TOKEN_TYPE_LTEQ: LESSGREATER,
@@ -64,6 +68,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NOT, self.parsePrefixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_PLUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_ASTERISK, self.parseInfixExpression)
@@ -74,6 +79,9 @@ class Parser(object):
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_GT, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LTEQ, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_GTEQ, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_IN, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_AND, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_OR, self.parseInfixExpression)
 
     def registerPrefix(self, tokenType, fn):
         self.prefixParseFns[tokenType.name] = fn
