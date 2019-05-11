@@ -152,5 +152,21 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 
+    def test_strings(self):
+        exprs = [
+            ('"foobar"', [TOKEN_TYPES.TOKEN_TYPE_STR], ["foobar"]),
+            ("'foo bar'", [TOKEN_TYPES.TOKEN_TYPE_STR], ["foo bar"]),
+            ("'foobar'+ 'a'", [TOKEN_TYPES.TOKEN_TYPE_STR, TOKEN_TYPES.TOKEN_TYPE_PLUS, TOKEN_TYPES.TOKEN_TYPE_STR], ["foobar", "+", "a"]),
+        ]
+        for expr, expectedTypes, expectedValues in exprs:
+            l = Lexer(expr)
+            tokens = l.lex()
+            tokenTypes = list(map(lambda t: t.tokenType, tokens))
+            tokenLiterals = list(map(lambda t: t.literal, tokens))
+
+            expectedTypes.extend([TOKEN_TYPES.TOKEN_TYPE_EOF])
+
+            self.assertEqual(tokenTypes, expectedTypes)
+
 if __name__ == '__main__':
     unittest.main()

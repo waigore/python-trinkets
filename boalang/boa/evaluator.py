@@ -1,6 +1,7 @@
 from .token import TOKEN_TYPES
 from .object import (
     newInteger,
+    newString,
     newReturnValue,
     newError,
     newFunction,
@@ -23,6 +24,7 @@ from .ast import (
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_FUNC_LIT,
+    EXPRESSION_TYPE_STR_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
@@ -62,6 +64,8 @@ def boaEval(node, env=None):
         exprType = node.expressionType
         if exprType == EXPRESSION_TYPE_INT_LIT:
             return newInteger(node.value)
+        elif exprType == EXPRESSION_TYPE_STR_LIT:
+            return newString(node.value)
         elif exprType == EXPRESSION_TYPE_IDENT:
             return evalIdentifier(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
@@ -140,6 +144,9 @@ def evalInfixExpression(operator, left, right, env):
     elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_BOOLEAN and \
             right.objectType == OBJECT_TYPES.OBJECT_TYPE_BOOLEAN:
         return evalBooleanInfixExpression(operator, left, right, env)
+    elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING and \
+            right.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING:
+        return evalStringInfixExpression(operator, left, right, env)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
@@ -239,6 +246,15 @@ def evalIntegerInfixExpression(operator, left, right, env):
         return TRUE if leftVal == rightVal else FALSE
     elif operator == TOKEN_TYPES.TOKEN_TYPE_NEQ.value:
         return TRUE if leftVal != rightVal else FALSE
+    else:
+        return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
+
+def evalStringInfixExpression(operator, left, right, env):
+    leftVal = left.value
+    rightVal = right.value
+
+    if operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
+        return newString(leftVal + rightVal)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 

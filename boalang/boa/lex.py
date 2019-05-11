@@ -69,6 +69,14 @@ class Lexer(object):
             literal = self.readNumber()
             tok = Token(TOKEN_TYPES.TOKEN_TYPE_INT, literal)
             return tok
+        elif self.ch == '"':
+            literal = self.readString('"')
+            tok = Token(TOKEN_TYPES.TOKEN_TYPE_STR, literal)
+            return tok
+        elif self.ch == "'":
+            literal = self.readString("'")
+            tok = Token(TOKEN_TYPES.TOKEN_TYPE_STR, literal)
+            return tok
         else:
             tok = Token(TOKEN_TYPES.TOKEN_TYPE_ILLEGAL, ch)
             self.readChar()
@@ -86,6 +94,15 @@ class Lexer(object):
             self.readChar()
 
         return self.input[pos:self.position]
+
+    def readString(self, quoteChar):
+        pos = self.position + 1
+        while True:
+            self.readChar()
+            if self.ch == quoteChar or self.ch == '':
+                self.readChar()
+                break
+        return self.input[pos:self.position-1]
 
     def readIdentifier(self):
         pos = self.position

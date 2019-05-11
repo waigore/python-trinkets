@@ -3,6 +3,7 @@ from .util import DictLikeStruct
 
 OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
+OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
@@ -13,19 +14,21 @@ class NoSuchObjectTypeError(Exception): pass
 class ObjectInstantiationError(Exception): pass
 
 class BoaObjectType(object):
-    def __init__(self, name):
+    def __init__(self, name, shortName):
         self.name = name
+        self.shortName = shortName
 
     def __repr__(self):
-        return '[%s]' % self.name
+        return '[%s]' % self.shortName
 
 OBJECT_TYPES = DictLikeStruct({
-    OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT),
-    OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN),
-    OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL),
-    OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE),
-    OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR),
-    OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION),
+    OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int"),
+    OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean"),
+    OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string"),
+    OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
+    OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
+    OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
+    OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
 })
 
 def newObject(typName, *args):
@@ -38,6 +41,9 @@ def newObject(typName, *args):
 
 def newInteger(i):
     return newObject(OBJECT_TYPE_INT, i)
+
+def newString(s):
+    return newObject(OBJECT_TYPE_STRING, s)
 
 def newReturnValue(obj):
     return newObject(OBJECT_TYPE_RETURN_VALUE, obj)
@@ -62,6 +68,14 @@ class BoaInteger(BoaObject):
 
     def inspect(self):
         return "%d" % (self.value)
+
+class BoaString(BoaObject):
+    def __init__(self, value):
+        super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
+        self.value = value
+
+    def inspect(self):
+        return '"%s"' % (self.value)
 
 class BoaBoolean(BoaObject):
     def __init__(self, value):
@@ -118,4 +132,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_RETURN_VALUE: BoaReturnValue,
     OBJECT_TYPE_ERROR: BoaError,
     OBJECT_TYPE_FUNCTION: BoaFunction,
+    OBJECT_TYPE_STRING: BoaString,
 })

@@ -135,6 +135,7 @@ class TestParsing(unittest.TestCase):
             ("3 > 5 == false", "((3 > 5) == False)"),
             ("3 < 5 == true", "((3 < 5) == True)"),
             ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
+            ('"foo" + "bar"', '("foo" + "bar")'),
         ]
         self.parseAndCmpExprPairs(exprs)
 

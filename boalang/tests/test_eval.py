@@ -64,6 +64,7 @@ class TestEval(unittest.TestCase):
             ("true == false", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
             ("true != true", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
             ("true != false", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("'foobar' + 'barfoo'", OBJECT_TYPES.OBJECT_TYPE_STRING, "foobarbarfoo"),
         ]
 
         for code, expectedType, expectedValue in exprs:

@@ -67,6 +67,7 @@ class Parser(object):
     def registerAllParseFns(self):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IDENT, self.parseIdentifier)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_STR, self.parseStringLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NOT, self.parsePrefixExpression)
@@ -353,6 +354,10 @@ class Parser(object):
             return None
 
         lit = IntegerLiteral(self.curToken, value)
+        return lit
+
+    def parseStringLiteral(self):
+        lit = StringLiteral(self.curToken, self.curToken.literal)
         return lit
 
     def parseFunctionLiteral(self):
