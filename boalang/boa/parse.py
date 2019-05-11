@@ -148,10 +148,15 @@ class Parser(object):
         return program
 
     def parseStatement(self):
-        if self.curToken.tokenType == TOKEN_TYPES.TOKEN_TYPE_LET:
+        if self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_LET):
             return self.parseLetStatement()
-        elif self.curToken.tokenType == TOKEN_TYPES.TOKEN_TYPE_RETURN:
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RETURN):
             return self.parseReturnStatement()
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_WHILE):
+            return self.parseWhileStatement()
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_BREAK) or \
+                self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
+            return self.parseLoopControlStatement()
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
                 self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
             return self.parseAssignStatement()
@@ -202,6 +207,38 @@ class Parser(object):
 
         returnValue = self.parseExpression(LOWEST)
         statement = ReturnStatement(returnToken, returnValue)
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
+
+        return statement
+
+    def parseWhileStatement(self):
+        whileToken = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+            return None
+
+        self.nextToken()
+        condition = self.parseExpression(LOWEST)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            return None
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        blockStatement = self.parseBlockStatement()
+
+        whileStatement = WhileStatement(whileToken, condition, blockStatement)
+        return whileStatement
+
+    def parseLoopControlStatement(self):
+        curToken = self.curToken
+        if self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
+            statement = ContinueStatement(curToken)
+        else:
+            statement = BreakStatement(curToken)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()

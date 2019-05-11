@@ -24,6 +24,9 @@ from .ast import (
     STATEMENT_TYPE_RETURN,
     STATEMENT_TYPE_LET,
     STATEMENT_TYPE_ASSIGN,
+    STATEMENT_TYPE_WHILE,
+    STATEMENT_TYPE_BREAK,
+    STATEMENT_TYPE_CONTINUE,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_FUNC_LIT,
@@ -47,6 +50,8 @@ def boaEval(node, env=None):
             return boaEval(node.expression, env)
         elif stmtType == STATEMENT_TYPE_BLOCK:
             return evalBlockStatement(node, env)
+        elif stmtType == STATEMENT_TYPE_WHILE:
+            return evalWhileStatement(node, env)
         elif stmtType == STATEMENT_TYPE_RETURN:
             val = boaEval(node.value, env)
             if isError(val):
@@ -127,6 +132,37 @@ def evalBlockStatement(block, env):
             if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE, OBJECT_TYPES.OBJECT_TYPE_ERROR]:
                 return result
 
+    return result
+
+def evalLoopBlockStatement(block, env): #returns true if loop execution should continue, false otherwise
+    result = None
+    for statement in block.statements:
+        if statement.statementType == STATEMENT_TYPE_BREAK:
+            return result, False
+        elif statement.statementType == STATEMENT_TYPE_CONTINUE:
+            return result, True
+        else:
+            result = boaEval(statement, env)
+            if result is not None:
+                typ = result.objectType
+                if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE, OBJECT_TYPES.OBJECT_TYPE_ERROR]:
+                    return result, False
+
+    return result, True
+
+def evalWhileStatement(node, env):
+    result = None
+    while True:
+        conditionEvaluated = boaEval(node.condition, env)
+        if isError(conditionEvaluated):
+            return conditionEvaluated
+
+        if isTruthy(conditionEvaluated):
+            result, continueExecution = evalLoopBlockStatement(node.blockStatement, env)
+            if not continueExecution:
+                break
+        else:
+            break
     return result
 
 def evalPrefixExpression(operator, right, env):

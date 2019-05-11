@@ -10,6 +10,9 @@ STATEMENT_TYPE_ASSIGN = "ASSIGN_STATEMENT"
 STATEMENT_TYPE_RETURN = "RETURN_STATEMENT"
 STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
 STATEMENT_TYPE_BLOCK = "BLOCK_STATEMENT"
+STATEMENT_TYPE_WHILE = "WHILE_STATEMENT"
+STATEMENT_TYPE_BREAK = "BREAK_STATEMENT"
+STATEMENT_TYPE_CONTINUE = "CONTINUE_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
@@ -70,6 +73,20 @@ class ReturnStatement(Statement):
     def __repr__(self):
         return 'return %s;' % (self.value)
 
+class BreakStatement(Statement):
+    def __init__(self, token):
+        super(BreakStatement, self).__init__(STATEMENT_TYPE_BREAK, token, None)
+
+    def __repr__(self):
+        return 'break;'
+
+class ContinueStatement(Statement):
+    def __init__(self, token):
+        super(ContinueStatement, self).__init__(STATEMENT_TYPE_CONTINUE, token, None)
+
+    def __repr__(self):
+        return 'continue;'
+
 class ExpressionStatement(Statement):
     def __init__(self, token, expr):
         super(ExpressionStatement, self).__init__(STATEMENT_TYPE_EXPRESSION, token, expr)
@@ -91,6 +108,18 @@ class BlockStatement(Statement):
 
     def __repr__(self):
         return '{%s}' % ' '.join([str(s) for s in self.statements])
+
+class WhileStatement(Statement):
+    def __init__(self, token, condition, blockStatement):
+        super(WhileStatement, self).__init__(STATEMENT_TYPE_WHILE, token, blockStatement)
+        self.condition = condition #expression
+
+    @property
+    def blockStatement(self):
+        return self.value
+
+    def __repr__(self):
+        return 'while (%s) %s' % (self.condition, self.blockStatement)
 
 class Identifier(Expression):
     def __init__(self, token, value=None):

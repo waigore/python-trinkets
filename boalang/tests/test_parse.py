@@ -7,6 +7,7 @@ from boa.ast import (
     STATEMENT_TYPE_RETURN,
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_BLOCK,
+    STATEMENT_TYPE_WHILE,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_PREFIX,
@@ -158,6 +159,17 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
         self.assertEqual(statement.expression.expressionType, EXPRESSION_TYPE_IF)
         self.assertEqual(str(statement.expression), "if ((x == 2)) {y z} else {let g = zz; z}")
+
+    def test_while(self):
+        code = """while (true) { y; }"""
+        p = Parser(code)
+        prog = p.parseProgram()
+
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_WHILE)
+        self.assertEqual(str(statement), "while (True) {y}")
 
     def test_functions(self):
         code = """fn (x, y) { return x + y; }"""

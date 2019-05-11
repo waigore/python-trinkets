@@ -152,6 +152,24 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 
+    def test_lexWhile(self):
+        code = """ while (true) { a; } """
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_WHILE,
+            TOKEN_TYPES.TOKEN_TYPE_LPAREN,
+            TOKEN_TYPES.TOKEN_TYPE_TRUE,
+            TOKEN_TYPES.TOKEN_TYPE_RPAREN,
+            TOKEN_TYPES.TOKEN_TYPE_LBRACE,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_RBRACE,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
+
     def test_strings(self):
         exprs = [
             ('"foobar"', [TOKEN_TYPES.TOKEN_TYPE_STR], ["foobar"]),
