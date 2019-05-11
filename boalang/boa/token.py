@@ -50,10 +50,11 @@ KEYWORD_AND = 'and'
 KEYWORD_OR = 'or'
 
 class TokenType(object):
-    def __init__(self, name, value, isLiteral=True):
+    def __init__(self, name, value, isOperator=True, isKeyword=False):
         self.name = name
         self.value = value
-        self.isLiteral = isLiteral
+        self.isOperator = isOperator
+        self.isKeyword = isKeyword
 
     def __repr__(self):
         return '[%s "%s"]' % (self.name, self.value)
@@ -67,21 +68,21 @@ class Token(object):
         return '[%s "%s"]' % (self.tokenType, self.literal)
 
 TOKEN_TYPES = DictLikeStruct({
-    TOKEN_TYPE_ILLEGAL: TokenType(TOKEN_TYPE_ILLEGAL, 'ILLEGAL', isLiteral=False),
-    TOKEN_TYPE_EOF: TokenType(TOKEN_TYPE_EOF, 'EOF', isLiteral=False),
-    TOKEN_TYPE_IDENT: TokenType(TOKEN_TYPE_IDENT, 'IDENT', isLiteral=False),
-    TOKEN_TYPE_INT: TokenType(TOKEN_TYPE_INT, 'INT', isLiteral=False),
-    TOKEN_TYPE_FUNCTION: TokenType(TOKEN_TYPE_FUNCTION, 'FUNCTION', isLiteral=False),
-    TOKEN_TYPE_LET: TokenType(TOKEN_TYPE_LET, 'LET', isLiteral=False),
-    TOKEN_TYPE_IF: TokenType(TOKEN_TYPE_IF, 'IF', isLiteral=False),
-    TOKEN_TYPE_ELSE: TokenType(TOKEN_TYPE_ELSE, 'ELSE', isLiteral=False),
-    TOKEN_TYPE_RETURN: TokenType(TOKEN_TYPE_RETURN, 'RETURN', isLiteral=False),
-    TOKEN_TYPE_TRUE: TokenType(TOKEN_TYPE_TRUE, 'TRUE', isLiteral=False),
-    TOKEN_TYPE_FALSE: TokenType(TOKEN_TYPE_FALSE, 'FALSE', isLiteral=False),
-    TOKEN_TYPE_NOT: TokenType(TOKEN_TYPE_NOT, 'NOT', isLiteral=False),
-    TOKEN_TYPE_IN: TokenType(TOKEN_TYPE_IN, 'IN', isLiteral=False),
-    TOKEN_TYPE_AND: TokenType(TOKEN_TYPE_AND, 'AND', isLiteral=False),
-    TOKEN_TYPE_OR: TokenType(TOKEN_TYPE_OR, 'OR', isLiteral=False),
+    TOKEN_TYPE_ILLEGAL: TokenType(TOKEN_TYPE_ILLEGAL, 'ILLEGAL', isOperator=False),
+    TOKEN_TYPE_EOF: TokenType(TOKEN_TYPE_EOF, 'EOF', isOperator=False),
+    TOKEN_TYPE_IDENT: TokenType(TOKEN_TYPE_IDENT, 'IDENT', isOperator=False),
+    TOKEN_TYPE_INT: TokenType(TOKEN_TYPE_INT, 'INT', isOperator=False),
+    TOKEN_TYPE_FUNCTION: TokenType(TOKEN_TYPE_FUNCTION, KEYWORD_FN, isOperator=False),
+    TOKEN_TYPE_LET: TokenType(TOKEN_TYPE_LET, KEYWORD_LET, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_IF: TokenType(TOKEN_TYPE_IF, KEYWORD_IF, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_ELSE: TokenType(TOKEN_TYPE_ELSE, KEYWORD_ELSE, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_RETURN: TokenType(TOKEN_TYPE_RETURN, KEYWORD_RETURN, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_TRUE: TokenType(TOKEN_TYPE_TRUE, KEYWORD_TRUE, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_FALSE: TokenType(TOKEN_TYPE_FALSE, KEYWORD_FALSE, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_NOT: TokenType(TOKEN_TYPE_NOT, KEYWORD_NOT, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_IN: TokenType(TOKEN_TYPE_IN, KEYWORD_IN, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_AND: TokenType(TOKEN_TYPE_AND, KEYWORD_AND, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_OR: TokenType(TOKEN_TYPE_OR, KEYWORD_OR, isOperator=False, isKeyword=True),
     TOKEN_TYPE_ASSIGN: TokenType(TOKEN_TYPE_ASSIGN, '='),
     TOKEN_TYPE_EQ: TokenType(TOKEN_TYPE_EQ, '=='),
     TOKEN_TYPE_NEQ: TokenType(TOKEN_TYPE_NEQ, '!='),
@@ -119,8 +120,8 @@ KEYWORDS =  DictLikeStruct({
 })
 
 def allOperatorTypes():
-    literalTypes = filter(lambda t: t.isLiteral, TOKEN_TYPES.toDict().values())
-    return sorted(literalTypes, key=lambda t: len(t.value), reverse=True)
+    opTypes = filter(lambda t: t.isOperator, TOKEN_TYPES.toDict().values())
+    return sorted(opTypes, key=lambda t: len(t.value), reverse=True)
 
 def lookupIdent(ident):
     if ident in KEYWORDS:

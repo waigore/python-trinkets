@@ -122,7 +122,7 @@ class PrefixExpression(Expression):
         self.right = right
 
     def __repr__(self):
-        isKeyword = not self.token.tokenType.isLiteral
+        isKeyword = self.token.tokenType.isKeyword
         return '(%s%s%s)' %(self.operator, ' ' if isKeyword else '', self.right)
 
 class InfixExpression(Expression):
