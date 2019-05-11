@@ -10,12 +10,20 @@ class BoaParserError(Exception):
 class BoaEnvError(Exception): pass
 
 class Environment(object):
-    def __init__(self):
+    def __init__(self, outer=None):
         self.store = {}
+        self.outer = outer
+
+    def newInner(self):
+        env = Environment(outer=self)
+        return env
 
     def getIdentifier(self, ident):
         if ident.expressionType != EXPRESSION_TYPE_IDENT:
             raise BoaEnvError('Node not identifier: ' % (str(ident)))
+
+        if not self.hasIdentifier(ident) and self.outer is not None:
+            return self.outer.getIdentifier(ident)
         return self.store[ident.value]
 
     def hasIdentifier(self, ident):

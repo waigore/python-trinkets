@@ -4,6 +4,7 @@ from .util import DictLikeStruct
 OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
+OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
 OBJECT_TYPE_ERROR = 'OBJECT_TYPE_ERROR'
 
@@ -24,6 +25,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR),
+    OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION),
 })
 
 def newObject(typName, *args):
@@ -42,6 +44,9 @@ def newReturnValue(obj):
 
 def newError(msg):
     return newObject(OBJECT_TYPE_ERROR, msg)
+
+def newFunction(params, body, env):
+    return newObject(OBJECT_TYPE_FUNCTION, params, body, env)
 
 class BoaObject(object):
     def __init__(self, typ):
@@ -82,6 +87,16 @@ class BoaReturnValue(BoaObject):
     def inspect(self):
         return self.value.inspect()
 
+class BoaFunction(BoaObject):
+    def __init__(self, parameters, body, env):
+        super(BoaFunction, self).__init__(OBJECT_TYPES.OBJECT_TYPE_FUNCTION)
+        self.parameters = parameters #list of Identifiers
+        self.body = body #BlockStatement
+        self.env = env #Environment
+
+    def inspect(self):
+        return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
+
 class BoaError(BoaObject):
     def __init__(self, value):
         super(BoaError, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ERROR)
@@ -102,4 +117,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_INT: BoaInteger,
     OBJECT_TYPE_RETURN_VALUE: BoaReturnValue,
     OBJECT_TYPE_ERROR: BoaError,
+    OBJECT_TYPE_FUNCTION: BoaFunction,
 })

@@ -3,6 +3,7 @@ from .object import (
     newInteger,
     newReturnValue,
     newError,
+    newFunction,
     NULL,
     TRUE,
     FALSE,
@@ -21,10 +22,12 @@ from .ast import (
     STATEMENT_TYPE_ASSIGN,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INT_LIT,
+    EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_IF,
+    EXPRESSION_TYPE_CALL,
 )
 
 def boaEval(node, env=None):
@@ -78,6 +81,20 @@ def boaEval(node, env=None):
             return evalInfixExpression(node.operator, leftEvaluated, rightEvaluated, env)
         elif exprType == EXPRESSION_TYPE_IF:
             return evalIfExpression(node, env)
+        elif exprType == EXPRESSION_TYPE_FUNC_LIT:
+            params = node.parameters
+            body = node.body
+            return newFunction(params, body, env)
+        elif exprType == EXPRESSION_TYPE_CALL:
+            function = boaEval(node.function, env)
+            if isError(function):
+                return function
+
+            args = evalExpressions(node.arguments, env)
+            if len(args) == 1 and isError(args[0]):
+                return args[0]
+
+            return applyFunction(function, args)
 
     return None
 
@@ -138,6 +155,34 @@ def evalIfExpression(node, env):
     else:
         return None
 
+def evalExpressions(exprs, env):
+    result = []
+    for expr in exprs:
+        evaluated = boaEval(expr, env)
+        if isError(evaluated):
+            return [evaluated]
+        result.append(evaluated)
+    return result
+
+def applyFunction(function, args):
+    if function.objectType != OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
+        return newError("Not a function: %s" % function.objectType)
+    innerEnv = extendFunctionEnv(function, args, function.env)
+    evaluated = boaEval(function.body, innerEnv)
+    return unwrapReturnValue(evaluated)
+
+def extendFunctionEnv(function, args, env):
+    newEnv = env.newInner()
+    for param, arg in zip(function.parameters, args):
+        newEnv.setIdentifier(param, arg)
+    return newEnv
+
+def unwrapReturnValue(obj):
+    if obj.objectType != OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE:
+        return obj
+    else:
+        return obj.value
+
 def isTruthy(obj):
     if obj == NULL:
         return False
@@ -153,9 +198,10 @@ def isError(obj):
     return obj.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR
 
 def evalIdentifier(node, env):
-    if not env.hasIdentifier(node):
+    try:
+        val = env.getIdentifier(node)
+    except:
         return newError("Identifier not found: %s" % node.value)
-    val = env.getIdentifier(node)
     return val
 
 def evalBooleanInfixExpression(operator, left, right, env):
