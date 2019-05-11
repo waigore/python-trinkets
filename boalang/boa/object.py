@@ -6,6 +6,7 @@ OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
+OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
 OBJECT_TYPE_ERROR = 'OBJECT_TYPE_ERROR'
 
@@ -29,6 +30,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
+    OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
 })
 
 def newObject(typName, *args):
@@ -53,6 +55,9 @@ def newError(msg):
 
 def newFunction(params, body, env):
     return newObject(OBJECT_TYPE_FUNCTION, params, body, env)
+
+def newBuiltinFunction(name, func):
+    return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
 
 class BoaObject(object):
     def __init__(self, typ):
@@ -111,6 +116,15 @@ class BoaFunction(BoaObject):
     def inspect(self):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
 
+class BoaBuiltinFunction(BoaObject):
+    def __init__(self, name, func):
+        super(BoaBuiltinFunction, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION)
+        self.name = name
+        self.func = func
+
+    def inspect(self):
+        return '[builtin]%s()' % (self.name)
+
 class BoaError(BoaObject):
     def __init__(self, value):
         super(BoaError, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ERROR)
@@ -132,5 +146,6 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_RETURN_VALUE: BoaReturnValue,
     OBJECT_TYPE_ERROR: BoaError,
     OBJECT_TYPE_FUNCTION: BoaFunction,
+    OBJECT_TYPE_BUILTIN_FUNCTION: BoaBuiltinFunction,
     OBJECT_TYPE_STRING: BoaString,
 })

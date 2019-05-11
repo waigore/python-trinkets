@@ -11,6 +11,9 @@ from .object import (
     OBJECT_TYPES,
     OBJECT_TYPE_INT,
     OBJECT_TYPE_BOOLEAN,
+    OBJECT_TYPE_STRING,
+    OBJECT_TYPE_FUNCTION,
+    OBJECT_TYPE_BUILTIN_FUNCTION,
 )
 from .ast import (
     NODE_TYPE_PROGRAM,
@@ -31,6 +34,7 @@ from .ast import (
     EXPRESSION_TYPE_IF,
     EXPRESSION_TYPE_CALL,
 )
+from .builtins import BUILTIN_FUNCTIONS
 
 def boaEval(node, env=None):
     nodeType = node.nodeType
@@ -172,11 +176,14 @@ def evalExpressions(exprs, env):
     return result
 
 def applyFunction(function, args):
-    if function.objectType != OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
-        return newError("Not a function: %s" % function.objectType)
-    innerEnv = extendFunctionEnv(function, args, function.env)
-    evaluated = boaEval(function.body, innerEnv)
-    return unwrapReturnValue(evaluated)
+    if function.objectType == OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
+        innerEnv = extendFunctionEnv(function, args, function.env)
+        evaluated = boaEval(function.body, innerEnv)
+        return unwrapReturnValue(evaluated)
+    elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
+        return function.func(args)
+
+    return newError("Not a function: %s" % function.objectType)
 
 def extendFunctionEnv(function, args, env):
     newEnv = env.newInner()
@@ -208,8 +215,15 @@ def evalIdentifier(node, env):
     try:
         val = env.getIdentifier(node)
     except:
+        bfn = getBuiltinFunction(node.value)
+        if bfn:
+            return bfn
         return newError("Identifier not found: %s" % node.value)
     return val
+
+def getBuiltinFunction(name):
+    if name not in BUILTIN_FUNCTIONS: return None
+    return BUILTIN_FUNCTIONS[name]
 
 def evalBooleanInfixExpression(operator, left, right, env):
     leftVal = left.value

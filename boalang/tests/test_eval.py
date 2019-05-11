@@ -110,6 +110,20 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_builtins(self):
+        exprs = [
+            ("""len("abc")""", OBJECT_TYPES.OBJECT_TYPE_INT, 3),
+            ("""len("")""", OBJECT_TYPES.OBJECT_TYPE_INT, 0),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            p = Parser(code)
+            prog = p.parseProgram()
+
+            result = boaEval(prog)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
     def test_evalErrors(self):
         exprs = [
             ("true + false", OBJECT_TYPES.OBJECT_TYPE_ERROR),
