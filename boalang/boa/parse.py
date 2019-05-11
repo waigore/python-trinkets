@@ -151,8 +151,27 @@ class Parser(object):
             return self.parseLetStatement()
         elif self.curToken.tokenType == TOKEN_TYPES.TOKEN_TYPE_RETURN:
             return self.parseReturnStatement()
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
+                self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
+            return self.parseAssignStatement()
         else:
             return self.parseExpressionStatement()
+
+    def parseAssignStatement(self):
+        ident = Identifier(self.curToken)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
+            return None
+
+        self.nextToken()
+
+        value = self.parseExpression(LOWEST)
+        statement = AssignStatement(ident, ident, value)
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
+
+        return statement
 
     def parseLetStatement(self):
         letToken = self.curToken

@@ -1,6 +1,7 @@
 from .parse import Parser
 from .lex import Lexer
 from .evaluator import boaEval
+from .environment import Environment, BoaParserError
 
 try:
     import readline
@@ -11,7 +12,7 @@ PROMPT = ">> "
 
 class Repl(object):
     def __init__(self):
-        pass
+        self.env = Environment()
 
     def start(self):
         while True:
@@ -22,14 +23,11 @@ class Repl(object):
             except KeyboardInterrupt:
                 return
 
-            p = Parser(line)
-            program = p.parseProgram()
-
-            if len(p.errors) > 0:
-                for err in p.errors:
+            try:
+                evaluated = self.env.evaluate(line)
+                if evaluated is not None:
+                    print(evaluated.inspect())
+            except BoaParserError as bpe:
+                for err in bpe.errors:
                     print(err.msg)
                 continue
-
-            evaluated = boaEval(program)
-            if evaluated is not None:
-                print(evaluated.inspect())

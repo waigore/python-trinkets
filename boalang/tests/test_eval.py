@@ -5,6 +5,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
 from boa.parse import Parser
 from boa.evaluator import boaEval
+from boa.environment import Environment
 from boa.object import OBJECT_TYPES
 
 class TestEval(unittest.TestCase):

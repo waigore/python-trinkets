@@ -17,6 +17,9 @@ from .ast import (
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_BLOCK,
     STATEMENT_TYPE_RETURN,
+    STATEMENT_TYPE_LET,
+    STATEMENT_TYPE_ASSIGN,
+    EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_PREFIX,
@@ -24,50 +27,64 @@ from .ast import (
     EXPRESSION_TYPE_IF,
 )
 
-def boaEval(node):
+def boaEval(node, env=None):
     nodeType = node.nodeType
 
     if nodeType == NODE_TYPE_PROGRAM:
-        return evalProgram(node)
+        return evalProgram(node, env)
     elif nodeType == NODE_TYPE_STATEMENT:
         stmtType = node.statementType
         if stmtType == STATEMENT_TYPE_EXPRESSION:
-            return boaEval(node.expression)
+            return boaEval(node.expression, env)
         elif stmtType == STATEMENT_TYPE_BLOCK:
-            return evalBlockStatement(node)
+            return evalBlockStatement(node, env)
         elif stmtType == STATEMENT_TYPE_RETURN:
-            val = boaEval(node.value)
+            val = boaEval(node.value, env)
             if isError(val):
                 return val
             return newReturnValue(val)
+        elif stmtType == STATEMENT_TYPE_LET:
+            val = boaEval(node.value, env)
+            if isError(val):
+                return val
+            env.setIdentifier(node.identifier, val)
+        elif stmtType == STATEMENT_TYPE_ASSIGN:
+            if not env.hasIdentifier(node.identifier):
+                return newError("Identifier not declared: %s" % node.identifier.value)
+            val = boaEval(node.value, env)
+            if isError(val):
+                return val
+            env.setIdentifier(node.identifier, val)
     elif nodeType == NODE_TYPE_EXPRESSION:
         exprType = node.expressionType
         if exprType == EXPRESSION_TYPE_INT_LIT:
             return newInteger(node.value)
+        elif exprType == EXPRESSION_TYPE_IDENT:
+            return evalIdentifier(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
             return TRUE if node.value else FALSE
         elif exprType == EXPRESSION_TYPE_PREFIX:
-            rightEvaluated = boaEval(node.right)
+            rightEvaluated = boaEval(node.right, env)
             if isError(rightEvaluated):
                 return rightEvaluated
-            return evalPrefixExpression(node.operator, rightEvaluated)
+            return evalPrefixExpression(node.operator, rightEvaluated, env)
         elif exprType == EXPRESSION_TYPE_INFIX:
-            leftEvaluated = boaEval(node.left)
+            leftEvaluated = boaEval(node.left, env)
             if isError(leftEvaluated):
                 return leftEvaluated
-            rightEvaluated = boaEval(node.right)
+            rightEvaluated = boaEval(node.right, env)
             if isError(rightEvaluated):
                 return rightEvaluated
-            return evalInfixExpression(node.operator, leftEvaluated, rightEvaluated)
+            return evalInfixExpression(node.operator, leftEvaluated, rightEvaluated, env)
         elif exprType == EXPRESSION_TYPE_IF:
-            return evalIfExpression(node)
+            return evalIfExpression(node, env)
 
-    return newError("Unknown expression: %s" % node.value)
+    return None
 
-def evalProgram(program):
+def evalProgram(program, env):
     result = None
     for statement in program.statements:
-        result = boaEval(statement)
+        result = boaEval(statement, env)
         if result is not None:
             if result.objectType == OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE:
                 return result.value
@@ -76,10 +93,10 @@ def evalProgram(program):
 
     return result
 
-def evalBlockStatement(block):
+def evalBlockStatement(block, env):
     result = None
     for statement in block.statements:
-        result = boaEval(statement)
+        result = boaEval(statement, env)
         if result is not None:
             typ = result.objectType
             if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE, OBJECT_TYPES.OBJECT_TYPE_ERROR]:
@@ -87,37 +104,37 @@ def evalBlockStatement(block):
 
     return result
 
-def evalPrefixExpression(operator, right):
+def evalPrefixExpression(operator, right, env):
     if operator == TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION.value:
-        return evalExclamationOperatorExpression(right)
+        return evalExclamationOperatorExpression(right, env)
     elif operator == TOKEN_TYPES.TOKEN_TYPE_NOT.value:
-        return evalExclamationOperatorExpression(right)
+        return evalExclamationOperatorExpression(right, env)
     elif operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:
-        return evalMinusOperatorExpression(right)
+        return evalMinusOperatorExpression(right, env)
     else:
         return newError("Unknown operator: %s%s" % (operator, right.objectType))
 
-def evalInfixExpression(operator, left, right):
+def evalInfixExpression(operator, left, right, env):
     if left.objectType != right.objectType:
         return newError("Type mismatch: %s %s " % (left.objectType, operator, right.objectType))
     if left.objectType == OBJECT_TYPES.OBJECT_TYPE_INT and \
             right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
-        return evalIntegerInfixExpression(operator, left, right)
+        return evalIntegerInfixExpression(operator, left, right, env)
     elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_BOOLEAN and \
             right.objectType == OBJECT_TYPES.OBJECT_TYPE_BOOLEAN:
-        return evalBooleanInfixExpression(operator, left, right)
+        return evalBooleanInfixExpression(operator, left, right, env)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
-def evalIfExpression(node):
-    conditionEvaluated = boaEval(node.condition)
+def evalIfExpression(node, env):
+    conditionEvaluated = boaEval(node.condition, env)
     if isError(conditionEvaluated):
         return conditionEvaluated
 
     if isTruthy(conditionEvaluated):
-        return boaEval(node.consequence)
+        return boaEval(node.consequence, env)
     elif node.alternative is not None:
-        return boaEval(node.alternative)
+        return boaEval(node.alternative, env)
     else:
         return None
 
@@ -135,7 +152,13 @@ def isError(obj):
     if obj is None: return False
     return obj.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR
 
-def evalBooleanInfixExpression(operator, left, right):
+def evalIdentifier(node, env):
+    if not env.hasIdentifier(node):
+        return newError("Identifier not found: %s" % node.value)
+    val = env.getIdentifier(node)
+    return val
+
+def evalBooleanInfixExpression(operator, left, right, env):
     leftVal = left.value
     rightVal = right.value
 
@@ -146,7 +169,7 @@ def evalBooleanInfixExpression(operator, left, right):
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
-def evalIntegerInfixExpression(operator, left, right):
+def evalIntegerInfixExpression(operator, left, right, env):
     leftVal = left.value
     rightVal = right.value
 
@@ -173,7 +196,7 @@ def evalIntegerInfixExpression(operator, left, right):
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
-def evalExclamationOperatorExpression(right):
+def evalExclamationOperatorExpression(right, env):
     if right == TRUE:
         return FALSE
     elif right == FALSE:
@@ -183,7 +206,7 @@ def evalExclamationOperatorExpression(right):
     else:
         return FALSE
 
-def evalMinusOperatorExpression(right):
+def evalMinusOperatorExpression(right, env):
     if right.objectType != OBJECT_TYPES.OBJECT_TYPE_INT:
         return newError("Unknown operator: -%s" % right.objectType)
     value = right.value

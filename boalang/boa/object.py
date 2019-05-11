@@ -69,6 +69,7 @@ class BoaBoolean(BoaObject):
 class BoaNull(BoaObject):
     def __init__(self):
         super(BoaNull, self).__init__(OBJECT_TYPES.OBJECT_TYPE_NULL)
+        self.value = None
 
     def inspect(self):
         return "null"

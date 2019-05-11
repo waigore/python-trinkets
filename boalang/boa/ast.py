@@ -6,6 +6,7 @@ NODE_TYPE_STATEMENT = "STATEMENT"
 NODE_TYPE_EXPRESSION = "EXPRESSION"
 
 STATEMENT_TYPE_LET = "LET_STATEMENT"
+STATEMENT_TYPE_ASSIGN = "ASSIGN_STATEMENT"
 STATEMENT_TYPE_RETURN = "RETURN_STATEMENT"
 STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
 STATEMENT_TYPE_BLOCK = "BLOCK_STATEMENT"
@@ -52,6 +53,14 @@ class LetStatement(Statement):
 
     def __repr__(self):
         return 'let %s = %s;' % (self.identifier.value, self.value)
+
+class AssignStatement(Statement):
+    def __init__(self, token, identifier, value):
+        super(AssignStatement, self).__init__(STATEMENT_TYPE_ASSIGN, token, value)
+        self.identifier = identifier
+
+    def __repr__(self):
+        return '%s = %s;' % (self.identifier.value, self.value)
 
 class ReturnStatement(Statement):
     def __init__(self, token, value):
