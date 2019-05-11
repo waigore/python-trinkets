@@ -106,6 +106,17 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_evalErrors(self):
+        exprs = [
+            ("true + false", OBJECT_TYPES.OBJECT_TYPE_ERROR),
+        ]
+
+        for code, expectedType in exprs:
+            p = Parser(code)
+            prog = p.parseProgram()
+
+            result = boaEval(prog)
+            self.assertEqual(result.objectType, expectedType)
 
 if __name__ == '__main__':
     unittest.main()

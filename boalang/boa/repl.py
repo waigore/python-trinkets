@@ -27,7 +27,7 @@ class Repl(object):
 
             if len(p.errors) > 0:
                 for err in p.errors:
-                    print(p.msg)
+                    print(err.msg)
                 continue
 
             evaluated = boaEval(program)
