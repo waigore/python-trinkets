@@ -10,6 +10,7 @@ STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
+EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
 
@@ -69,6 +70,14 @@ class Identifier(Expression):
     def __init__(self, token, value=None):
         super(Identifier, self).__init__(EXPRESSION_TYPE_IDENT, token)
         self.value = value if value is not None else token.literal
+
+    def __repr__(self):
+        return str(self.value)
+
+class Boolean(Expression):
+    def __init__(self, token, value):
+        super(Boolean, self).__init__(EXPRESSION_TYPE_BOOLEAN, token)
+        self.value = value
 
     def __repr__(self):
         return str(self.value)

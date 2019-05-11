@@ -116,6 +116,10 @@ class TestParsing(unittest.TestCase):
             ("not not a", "(not (not a))"),
             ("a and b", "(a and b)"),
             ("not a and b", "((not a) and b)"),
+            ("true", "True"),
+            ("false", "False"),
+            ("3 > 5 == false", "((3 > 5) == False)"),
+            ("3 < 5 == true", "((3 < 5) == True)"),
         ]
 
         for pair in exprs:
