@@ -31,6 +31,7 @@ PRECEDENCE_MAP = DictLikeStruct({
     TOKEN_TYPES.TOKEN_TYPE_MINUS: SUM,
     TOKEN_TYPES.TOKEN_TYPE_SLASH: PRODUCT,
     TOKEN_TYPES.TOKEN_TYPE_ASTERISK: PRODUCT,
+    TOKEN_TYPES.TOKEN_TYPE_LPAREN: CALL,
 })
 
 class ParserError(object):
@@ -87,6 +88,7 @@ class Parser(object):
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_IN, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_AND, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_OR, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseCallExpression)
 
     def registerPrefix(self, tokenType, fn):
         self.prefixParseFns[tokenType.name] = fn
@@ -234,6 +236,33 @@ class Parser(object):
         right = self.parseExpression(precedence)
         expr = InfixExpression(exprToken, left, right)
         return expr
+
+    def parseCallExpression(self, function):
+        callToken = self.curToken
+
+        args = self.parseCallArguments()
+        expr = CallExpression(callToken, function, args)
+        return expr
+
+    def parseCallArguments(self):
+        args = []
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            self.nextToken()
+            return args
+
+        self.nextToken()
+        args.append(self.parseExpression(LOWEST))
+
+        while self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_COMMA):
+            self.nextToken()
+            self.nextToken()
+            args.append(self.parseExpression(LOWEST))
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            return None
+
+        return args
 
     def parseGroupedExpression(self):
         self.nextToken()

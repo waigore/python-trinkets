@@ -16,6 +16,7 @@ EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
 EXPRESSION_TYPE_IF = "IF_EXPRESSION"
+EXPRESSION_TYPE_CALL = "CALL_EXPRESSION"
 
 class Node(object):
     def __init__(self, token, typ):
@@ -143,6 +144,15 @@ class IfExpression(Expression):
     def __repr__(self):
         alt = (' else %s' % self.alternative) if self.alternative else ''
         return ('if (%s) %s%s' % (self.condition, self.consequence, alt))
+
+class CallExpression(Expression):
+    def __init__(self, token, function, arguments):
+        super(CallExpression, self).__init__(EXPRESSION_TYPE_CALL, token)
+        self.function = function #identifier or function literal
+        self.arguments = arguments #Expression list
+
+    def __repr__(self):
+        return '%s(%s)' % (self.function, ','.join([str(arg) for arg in self.arguments]))
 
 class Program(object):
     def __init__(self):
