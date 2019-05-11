@@ -72,6 +72,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_TRUE, self.parseBoolean)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_FALSE, self.parseBoolean)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseGroupedExpression)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IF, self.parseIfExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_PLUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_ASTERISK, self.parseInfixExpression)
@@ -241,6 +242,50 @@ class Parser(object):
             return None
 
         return expr
+
+    def parseIfExpression(self):
+        ifTok = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+            return None
+
+        self.nextToken()
+        condition = self.parseExpression(LOWEST)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            return None
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        consequence = self.parseBlockStatement()
+        alternative = None
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ELSE):
+            self.nextToken()
+
+            if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+                return None
+
+            alternative = self.parseBlockStatement()
+
+        expr = IfExpression(ifTok, condition, consequence, alternative)
+        return expr
+
+    def parseBlockStatement(self):
+        blockTok = self.curToken
+        statements = []
+
+        self.nextToken()
+        while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and \
+                not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_EOF):
+            statement = self.parseStatement()
+            if statement is not None:
+                statements.append(statement)
+            self.nextToken()
+
+        block = BlockStatement(blockTok, statements)
+        return block
 
     def parseIdentifier(self):
         ident = Identifier(self.curToken)

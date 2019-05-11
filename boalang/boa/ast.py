@@ -7,12 +7,14 @@ NODE_TYPE_EXPRESSION = "EXPRESSION"
 STATEMENT_TYPE_LET = "LET_STATEMENT"
 STATEMENT_TYPE_RETURN = "RETURN_STATEMENT"
 STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
+STATEMENT_TYPE_BLOCK = "BLOCK_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
 EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
+EXPRESSION_TYPE_IF = "IF_EXPRESSION"
 
 class Node(object):
     def __init__(self, token, typ):
@@ -66,6 +68,17 @@ class ExpressionStatement(Statement):
     def __repr__(self):
         return str(self.expression)
 
+class BlockStatement(Statement):
+    def __init__(self, token, statements):
+        super(BlockStatement, self).__init__(STATEMENT_TYPE_EXPRESSION, token, statements)
+
+    @property
+    def statements(self):
+        return self.value
+
+    def __repr__(self):
+        return '{%s}' % ' '.join([str(s) for s in self.statements])
+
 class Identifier(Expression):
     def __init__(self, token, value=None):
         super(Identifier, self).__init__(EXPRESSION_TYPE_IDENT, token)
@@ -109,6 +122,17 @@ class InfixExpression(Expression):
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
+
+class IfExpression(Expression):
+    def __init__(self, token, condition, consequence, alternative):
+        super(IfExpression, self).__init__(EXPRESSION_TYPE_IF, token)
+        self.condition = condition
+        self.consequence = consequence
+        self.alternative = alternative
+
+    def __repr__(self):
+        alt = (' else %s' % self.alternative) if self.alternative else ''
+        return ('if (%s) %s%s' % (self.condition, self.consequence, alt))
 
 class Program(object):
     def __init__(self):
