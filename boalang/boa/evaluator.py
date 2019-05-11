@@ -68,10 +68,11 @@ def evalProgram(program):
     result = None
     for statement in program.statements:
         result = boaEval(statement)
-        if result.objectType == OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE:
-            return result.value
-        elif result.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR:
-            return result
+        if result is not None:
+            if result.objectType == OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE:
+                return result.value
+            elif result.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR:
+                return result
 
     return result
 
