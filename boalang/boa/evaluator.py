@@ -255,6 +255,10 @@ def evalStringInfixExpression(operator, left, right, env):
 
     if operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
         return newString(leftVal + rightVal)
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_EQ.value:
+        return TRUE if leftVal == rightVal else FALSE
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_NEQ.value:
+        return TRUE if leftVal != rightVal else FALSE
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
