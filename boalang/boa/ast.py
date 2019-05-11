@@ -73,7 +73,7 @@ class ExpressionStatement(Statement):
 
 class BlockStatement(Statement):
     def __init__(self, token, statements):
-        super(BlockStatement, self).__init__(STATEMENT_TYPE_EXPRESSION, token, statements)
+        super(BlockStatement, self).__init__(STATEMENT_TYPE_BLOCK, token, statements)
 
     @property
     def statements(self):

@@ -59,6 +59,43 @@ class TestEval(unittest.TestCase):
             ("1 >= -1", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
             ("1 + 1 == 2", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
             ("6 * 7 - 1 == 41", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("true == true", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("true == false", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
+            ("true != true", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
+            ("true != false", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            p = Parser(code)
+            prog = p.parseProgram()
+
+            result = boaEval(prog)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
+    def test_ifExpressions(self):
+        exprs = [
+            ("if (5 * 5 + 10 > 34) { 99 } else { 100 }", OBJECT_TYPES.OBJECT_TYPE_INT, 99),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            p = Parser(code)
+            prog = p.parseProgram()
+
+            result = boaEval(prog)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
+    def test_returnStatements(self):
+        exprs = [
+            ("""
+                if (10 > 1) {
+                    if (10 > 1) {
+                        return 10;
+                    }
+                    return 1;
+                }
+            """, OBJECT_TYPES.OBJECT_TYPE_INT, 10)
         ]
 
         for code, expectedType, expectedValue in exprs:
