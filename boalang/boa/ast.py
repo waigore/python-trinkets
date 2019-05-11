@@ -11,6 +11,7 @@ STATEMENT_TYPE_BLOCK = "BLOCK_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
+EXPRESSION_TYPE_FUNC_LIT = "FUNC_LIT_EXPRESSION"
 EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
@@ -102,6 +103,15 @@ class IntegerLiteral(Expression):
 
     def __repr__(self):
         return str(self.value)
+
+class FunctionLiteral(Expression):
+    def __init__(self, token, parameters, body):
+        super(FunctionLiteral, self).__init__(EXPRESSION_TYPE_FUNC_LIT, token)
+        self.parameters = parameters #list of identifiers
+        self.body = body #BlockStatement
+
+    def __repr__(self):
+        return 'fn (%s) %s' % (','.join([str(p) for p in self.parameters]), self.body)
 
 class PrefixExpression(Expression):
     def __init__(self, token, right):

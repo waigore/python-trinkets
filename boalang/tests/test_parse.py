@@ -12,6 +12,7 @@ from boa.ast import (
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_IF,
+    EXPRESSION_TYPE_FUNC_LIT,
 )
 from boa.parse import Parser
 from boa.lex import Lexer
@@ -156,6 +157,44 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(statement.expression.expressionType, EXPRESSION_TYPE_IF)
         self.assertEqual(str(statement.expression), "if ((x == 2)) {y z} else {let g = zz; z}")
 
+    def test_functions(self):
+        code = """fn (x, y) { return x + y; }"""
+        p = Parser(code)
+        prog = p.parseProgram()
+
+        self.assertEqual(len(p.errors), 0)
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
+        self.assertEqual(statement.expression.expressionType, EXPRESSION_TYPE_FUNC_LIT)
+        self.assertEqual(str(statement.expression), "fn (x,y) {return (x + y);}")
+
+    def test_funcWithOneParam(self):
+        code = """fn (x) { 1; }"""
+        p = Parser(code)
+        prog = p.parseProgram()
+
+        self.assertEqual(len(p.errors), 0)
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
+        self.assertEqual(statement.expression.expressionType, EXPRESSION_TYPE_FUNC_LIT)
+        self.assertEqual(str(statement.expression), "fn (x) {1}")
+
+    def test_funcWithNoParam(self):
+        code = """fn () { 1; }"""
+        p = Parser(code)
+        prog = p.parseProgram()
+
+        self.assertEqual(len(p.errors), 0)
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
+        self.assertEqual(statement.expression.expressionType, EXPRESSION_TYPE_FUNC_LIT)
+        self.assertEqual(str(statement.expression), "fn () {1}")
 
     def test_parseWithErrors(self):
         code = """let = 5;"""

@@ -73,6 +73,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_FALSE, self.parseBoolean)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseGroupedExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IF, self.parseIfExpression)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_FUNCTION, self.parseFunctionLiteral)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_PLUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_ASTERISK, self.parseInfixExpression)
@@ -305,3 +306,41 @@ class Parser(object):
 
         lit = IntegerLiteral(self.curToken, value)
         return lit
+
+    def parseFunctionLiteral(self):
+        fnToken = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+            return None
+
+        parameters = self.parseFunctionParameters()
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        body = self.parseBlockStatement()
+
+        lit = FunctionLiteral(self.curToken, parameters, body)
+        return lit
+
+    def parseFunctionParameters(self):
+        identifiers = []
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            self.nextToken()
+            return identifiers
+
+        self.nextToken()
+        ident = Identifier(self.curToken)
+        identifiers.append(ident)
+
+        while self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_COMMA):
+            self.nextToken()
+            self.nextToken()
+            ident = Identifier(self.curToken)
+            identifiers.append(ident)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            return None
+
+        return identifiers
