@@ -96,6 +96,17 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(statement2.expression.left.value, 7)
         self.assertEqual(statement2.expression.right.value, 5)
 
+    def parseAndCmpExprPairs(self, exprPairs):
+        for pair in exprPairs:
+            code, expected = pair
+            p = Parser(code)
+            prog = p.parseProgram()
+            self.assertEqual(len(prog.statements), 1)
+
+            statement = prog.statements[0]
+            self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
+            self.assertEqual(str(statement.expression), expected)
+
     def test_operatorPrecedence(self):
         exprs = [
             ("-a * b", "((-a) * b)"),
@@ -121,16 +132,15 @@ class TestParsing(unittest.TestCase):
             ("3 > 5 == false", "((3 > 5) == False)"),
             ("3 < 5 == true", "((3 < 5) == True)"),
         ]
+        self.parseAndCmpExprPairs(exprs)
 
-        for pair in exprs:
-            code, expected = pair
-            p = Parser(code)
-            prog = p.parseProgram()
-            self.assertEqual(len(prog.statements), 1)
-
-            statement = prog.statements[0]
-            self.assertEqual(statement.statementType, STATEMENT_TYPE_EXPRESSION)
-            self.assertEqual(str(statement.expression), expected)
+    def test_groupedExpressions(self):
+        exprs = [
+            ("-(a * b)", "(-(a * b))"),
+            ("(1 +2) * 3 - 4", "(((1 + 2) * 3) - 4)"),
+            ("(1 + 2) * (3 - 4)", "((1 + 2) * (3 - 4))"),
+        ]
+        self.parseAndCmpExprPairs(exprs)
 
     def test_parseWithErrors(self):
         code = """let = 5;"""
