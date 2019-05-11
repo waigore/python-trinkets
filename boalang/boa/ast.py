@@ -154,15 +154,22 @@ class InfixExpression(Expression):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
 
 class IfExpression(Expression):
-    def __init__(self, token, condition, consequence, alternative):
+    def __init__(self, token, conditionalBlocks, alternative):
         super(IfExpression, self).__init__(EXPRESSION_TYPE_IF, token)
-        self.condition = condition
-        self.consequence = consequence
+        self.conditionalBlocks = conditionalBlocks #tuple of (condition, blockStatement)s
         self.alternative = alternative
 
     def __repr__(self):
         alt = (' else %s' % self.alternative) if self.alternative else ''
-        return ('if (%s) %s%s' % (self.condition, self.consequence, alt))
+        formatted = []
+        for i, conditionalBlock in enumerate(self.conditionalBlocks):
+            condition, consequence = conditionalBlock
+            if i == 0:
+                formatted.append('if (%s) %s' % (condition, consequence))
+            else:
+                formatted.append('elif (%s) %s' % (condition, consequence))
+
+        return ('%s%s' % (' '.join(formatted), alt))
 
 class CallExpression(Expression):
     def __init__(self, token, function, arguments):

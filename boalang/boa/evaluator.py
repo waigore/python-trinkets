@@ -155,13 +155,15 @@ def evalInfixExpression(operator, left, right, env):
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
 def evalIfExpression(node, env):
-    conditionEvaluated = boaEval(node.condition, env)
-    if isError(conditionEvaluated):
-        return conditionEvaluated
+    for condition, consequence in node.conditionalBlocks:
+        conditionEvaluated = boaEval(condition, env)
+        if isError(conditionEvaluated):
+            return conditionEvaluated
 
-    if isTruthy(conditionEvaluated):
-        return boaEval(node.consequence, env)
-    elif node.alternative is not None:
+        if isTruthy(conditionEvaluated):
+            return boaEval(consequence, env)
+
+    if node.alternative is not None:
         return boaEval(node.alternative, env)
     else:
         return None

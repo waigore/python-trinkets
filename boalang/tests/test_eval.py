@@ -80,6 +80,8 @@ class TestEval(unittest.TestCase):
     def test_ifExpressions(self):
         exprs = [
             ("if (5 * 5 + 10 > 34) { 99 } else { 100 }", OBJECT_TYPES.OBJECT_TYPE_INT, 99),
+            ("if (false) { 99 } elif (true) { 101 } else { 100 }", OBJECT_TYPES.OBJECT_TYPE_INT, 101),
+            ("if (false) { 99 } elif (false) { 101 } else { 100 }", OBJECT_TYPES.OBJECT_TYPE_INT, 100),
         ]
 
         for code, expectedType, expectedValue in exprs:

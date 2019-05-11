@@ -294,32 +294,43 @@ class Parser(object):
         return expr
 
     def parseIfExpression(self):
-        ifTok = self.curToken
-
-        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
-            return None
-
-        self.nextToken()
-        condition = self.parseExpression(LOWEST)
-
-        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
-            return None
-
-        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
-            return None
-
-        consequence = self.parseBlockStatement()
+        conditionalBlocks = []
         alternative = None
+        hasElse = False
+        ifTok = self.curToken
+        while True:
+            if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+                return None
 
-        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ELSE):
             self.nextToken()
+            condition = self.parseExpression(LOWEST)
 
+            if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+                return None
+
+            if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+                return None
+
+            consequence = self.parseBlockStatement()
+
+            conditionalBlocks.append((condition, consequence))
+
+            if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ELIF):
+                self.nextToken()
+            elif self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ELSE):
+                self.nextToken()
+                hasElse = True
+                break
+            else:
+                break
+
+        if hasElse:
             if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
                 return None
 
             alternative = self.parseBlockStatement()
 
-        expr = IfExpression(ifTok, condition, consequence, alternative)
+        expr = IfExpression(ifTok, conditionalBlocks, alternative)
         return expr
 
     def parseBlockStatement(self):
