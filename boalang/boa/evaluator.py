@@ -314,7 +314,7 @@ def evalIfExpression(node, env):
         innerEnv = env.newInner()
         return boaEval(node.alternative, innerEnv)
     else:
-        return None
+        return NULL
 
 def evalExpressions(exprs, env):
     result = []

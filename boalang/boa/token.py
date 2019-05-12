@@ -3,6 +3,7 @@ from .util import DictLikeStruct
 
 TOKEN_TYPE_ILLEGAL = 'TOKEN_TYPE_ILLEGAL'
 TOKEN_TYPE_EOF = 'TOKEN_TYPE_EOF'
+TOKEN_TYPE_COMMENT = 'TOKEN_TYPE_COMMENT'
 TOKEN_TYPE_IDENT = 'TOKEN_TYPE_IDENT'
 TOKEN_TYPE_INT = 'TOKEN_TYPE_INT'
 TOKEN_TYPE_STR = 'TOKEN_TYPE_STR'
@@ -84,6 +85,7 @@ class Token(object):
 TOKEN_TYPES = DictLikeStruct({
     TOKEN_TYPE_ILLEGAL: TokenType(TOKEN_TYPE_ILLEGAL, 'ILLEGAL', isOperator=False),
     TOKEN_TYPE_EOF: TokenType(TOKEN_TYPE_EOF, 'EOF', isOperator=False),
+    TOKEN_TYPE_COMMENT: TokenType(TOKEN_TYPE_COMMENT, 'COMMENT', isOperator=False),
     TOKEN_TYPE_IDENT: TokenType(TOKEN_TYPE_IDENT, 'IDENT', isOperator=False),
     TOKEN_TYPE_INT: TokenType(TOKEN_TYPE_INT, 'INT', isOperator=False),
     TOKEN_TYPE_STR: TokenType(TOKEN_TYPE_STR, 'STR', isOperator=False),

@@ -146,6 +146,8 @@ class TestEval(unittest.TestCase):
              }
              a + b
              """, OBJECT_TYPES.OBJECT_TYPE_INT, 15),
+             ("let a = if (true) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 1),
+             ("let a = if (false) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
         ]
 
         for code, expectedType, expectedValue in exprs:

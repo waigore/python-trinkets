@@ -47,6 +47,11 @@ class Lexer(object):
         self.skipWhitespace()
 
         ch = self.ch
+        if self.ch == '/' and self.peekChars(1) == '/':
+            literal = self.readComment()
+            tok = Token(TOKEN_TYPES.TOKEN_TYPE_COMMENT, literal)
+            return tok
+
         for operatorType in self.allOperatorTypes:
             opLen = len(operatorType.value)
             s = ch + self.peekChars(opLen-1)
@@ -109,6 +114,14 @@ class Lexer(object):
         while self.isIdentifierChar(self.ch) or self.isDigit(self.ch):
             self.readChar()
 
+        return self.input[pos:self.position]
+
+    def readComment(self):
+        pos = self.position
+        while self.ch != '\n':
+            if self.ch == '':
+                break
+            self.readChar()
         return self.input[pos:self.position]
 
     def skipWhitespace(self):

@@ -157,6 +157,9 @@ class Parser(object):
     def nextToken(self):
         self.curToken = self.peekToken
         self.peekToken = self.lexer.nextToken()
+        while self.curToken is not None and self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_COMMENT):
+            self.curToken = self.peekToken
+            self.peekToken = self.lexer.nextToken()
 
     def parseProgram(self):
         program = Program()

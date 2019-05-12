@@ -213,5 +213,18 @@ class TestLexing(unittest.TestCase):
 
             self.assertEqual(tokenTypes, expectedTypes)
 
+    def test_lexComments(self):
+        code = """1; //3; 4;"""
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_INT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_COMMENT,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
+
 if __name__ == '__main__':
     unittest.main()
