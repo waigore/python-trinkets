@@ -11,19 +11,15 @@ from boa.object import OBJECT_TYPES
 class TestEval(unittest.TestCase):
     def test_intLiteral(self):
         code = """5"""
-        p = Parser(code)
-        prog = p.parseProgram()
-
-        result = boaEval(prog)
+        env = Environment()
+        result = env.evaluate(code)
         self.assertEqual(result.objectType, OBJECT_TYPES.OBJECT_TYPE_INT)
         self.assertEqual(result.value, 5)
 
     def test_boolLiteral(self):
         code = """true"""
-        p = Parser(code)
-        prog = p.parseProgram()
-
-        result = boaEval(prog)
+        env = Environment()
+        result = env.evaluate(code)
         self.assertEqual(result.objectType, OBJECT_TYPES.OBJECT_TYPE_BOOLEAN)
         self.assertEqual(result.value, True)
 
@@ -37,10 +33,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
@@ -70,10 +64,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
@@ -83,10 +75,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.inspect(), expectedValue)
 
@@ -98,10 +88,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
@@ -118,10 +106,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
@@ -133,18 +119,33 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType, expectedValue in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
-    def test_assignments(self):
+    def test_assignmentsAndLoops(self):
         exprs = [
             ("let a = 1; a = a + 1; a", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
             ("let a = [1, 2, 3, 4, 5]; a[0] = 5; a[0]", OBJECT_TYPES.OBJECT_TYPE_INT, 5),
             ("let a = [1, 2, 3, 4, 5]; let b = [3]; let c = a[0] + b[0]; c", OBJECT_TYPES.OBJECT_TYPE_INT, 4),
+            ("let a = 1; if (true) { a = 2; }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
+            ("let a = 1; if (true) { let a = 2; }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 1),
+            ("let a = 1; while (a < 10) { a = a + 1; } a", OBJECT_TYPES.OBJECT_TYPE_INT, 10),
+            ("""
+             let a = 1;
+             let b = 1;
+             while (a < 10) {
+                while (b < 10) {
+                    if (b >= 5) {
+                        break;
+                    }
+                    b = b + 1;
+                }
+                a = a + 1;
+             }
+             a + b
+             """, OBJECT_TYPES.OBJECT_TYPE_INT, 15),
         ]
 
         for code, expectedType, expectedValue in exprs:
@@ -159,10 +160,8 @@ class TestEval(unittest.TestCase):
         ]
 
         for code, expectedType in exprs:
-            p = Parser(code)
-            prog = p.parseProgram()
-
-            result = boaEval(prog)
+            env = Environment()
+            result = env.evaluate(code)
             self.assertEqual(result.objectType, expectedType)
 
 if __name__ == '__main__':

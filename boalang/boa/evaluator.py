@@ -75,7 +75,10 @@ def boaEval(node, env=None):
             val = boaEval(node.value, env)
             if isError(val):
                 return val
-            env.setIdentifier(node.identifier, val)
+            try:
+                env.declareIdentifier(node.identifier, val)
+            except Exception as e:
+                return newError(e.message)
         elif stmtType == STATEMENT_TYPE_ASSIGN:
             if node.identifier.expressionType == EXPRESSION_TYPE_INDEX:
                 return indexedAssignStatement(node, env)
@@ -215,17 +218,21 @@ def assignStatement(node, env):
     if isError(val):
         return val
 
-    env.setIdentifier(node.identifier, val)
+    try:
+        env.setIdentifier(node.identifier, val)
+    except Exception as e:
+        return newError(e.message)
 
 def evalWhileStatement(node, env):
     result = None
+    innerEnv = env.newInner()
     while True:
-        conditionEvaluated = boaEval(node.condition, env)
+        conditionEvaluated = boaEval(node.condition, innerEnv)
         if isError(conditionEvaluated):
             return conditionEvaluated
 
         if isTruthy(conditionEvaluated):
-            result, continueExecution = evalLoopBlockStatement(node.blockStatement, env)
+            result, continueExecution = evalLoopBlockStatement(node.blockStatement, innerEnv)
             if not continueExecution:
                 break
         else:
@@ -289,10 +296,12 @@ def evalIfExpression(node, env):
             return conditionEvaluated
 
         if isTruthy(conditionEvaluated):
-            return boaEval(consequence, env)
+            innerEnv = env.newInner()
+            return boaEval(consequence, innerEnv)
 
     if node.alternative is not None:
-        return boaEval(node.alternative, env)
+        innerEnv = env.newInner()
+        return boaEval(node.alternative, innerEnv)
     else:
         return None
 
@@ -320,7 +329,7 @@ def applyFunction(function, args):
 def extendFunctionEnv(function, args, env):
     newEnv = env.newInner()
     for param, arg in zip(function.parameters, args):
-        newEnv.setIdentifier(param, arg)
+        newEnv.declareIdentifier(param, arg)
     return newEnv
 
 def unwrapReturnValue(obj):
