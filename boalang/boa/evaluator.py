@@ -237,6 +237,8 @@ def evalWhileStatement(node, env):
                 break
         else:
             break
+    if result is not None and result.objectType in [OBJECT_TYPES.OBJECT_TYPE_BREAK, OBJECT_TYPES.OBJECT_TYPE_CONTINUE]:
+        return None
     return result
 
 def evalPrefixExpression(operator, right, env):
