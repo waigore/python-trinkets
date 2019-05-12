@@ -172,8 +172,8 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 
-    def test_arrays(self):
-        code = """[1, '2']; """
+    def test_arraysAndHashes(self):
+        code = """[1, '2']; {1: "1", 2: "2"}"""
         l = Lexer(code)
         tokens = l.lex()
         tokenTypes = list(map(lambda t: t.tokenType, tokens))
@@ -185,6 +185,15 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_STR,
             TOKEN_TYPES.TOKEN_TYPE_RBRACKET,
             TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_LBRACE,
+            TOKEN_TYPES.TOKEN_TYPE_INT,
+            TOKEN_TYPES.TOKEN_TYPE_COLON,
+            TOKEN_TYPES.TOKEN_TYPE_STR,
+            TOKEN_TYPES.TOKEN_TYPE_COMMA,
+            TOKEN_TYPES.TOKEN_TYPE_INT,
+            TOKEN_TYPES.TOKEN_TYPE_COLON,
+            TOKEN_TYPES.TOKEN_TYPE_STR,
+            TOKEN_TYPES.TOKEN_TYPE_RBRACE,
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 

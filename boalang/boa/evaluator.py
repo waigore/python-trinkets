@@ -3,6 +3,7 @@ from .object import (
     newInteger,
     newString,
     newArray,
+    newHash,
     newReturnValue,
     newError,
     newFunction,
@@ -14,6 +15,7 @@ from .object import (
     OBJECT_TYPE_BOOLEAN,
     OBJECT_TYPE_STRING,
     OBJECT_TYPE_ARRAY,
+    OBJECT_TYPE_HASH,
     OBJECT_TYPE_FUNCTION,
     OBJECT_TYPE_BUILTIN_FUNCTION,
 )
@@ -34,6 +36,7 @@ from .ast import (
     EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_STR_LIT,
     EXPRESSION_TYPE_ARRAY_LIT,
+    EXPRESSION_TYPE_HASH_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_PREFIX,
@@ -85,6 +88,8 @@ def boaEval(node, env=None):
             if len(elementsEvaluated) == 1 and isError(elementsEvaluated[0]):
                 return elementsEvaluated[0]
             return newArray(elementsEvaluated)
+        elif exprType == EXPRESSION_TYPE_HASH_LIT:
+            return evalHashLiteral(node, env)
         elif exprType == EXPRESSION_TYPE_IDENT:
             return evalIdentifier(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
@@ -214,6 +219,10 @@ def evalIndexExpression(left, index):
     if left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
             index.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
         return evalArrayIndexExpression(left, index)
+    elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_HASH:
+        return evalHashIndexExpression(left, index)
+    else:
+        return newError("Indexing not supported: %s[%s]" % (left.objectType, index.objectType))
 
 def evalArrayIndexExpression(left, index):
     arr = left.value
@@ -222,6 +231,13 @@ def evalArrayIndexExpression(left, index):
         val = arr[idx]
     except:
         return newError("Array index error: %s" % index.inspect())
+    return val
+
+def evalHashIndexExpression(left, index):
+    try:
+        val = left[index]
+    except Exception as e:
+        return newError("Hash index error: %s" % index.inspect())
     return val
 
 def evalIfExpression(node, env):
@@ -282,6 +298,25 @@ def isTruthy(obj):
 def isError(obj):
     if obj is None: return False
     return obj.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR
+
+def evalHashLiteral(node, env):
+    pairs = []
+
+    for key, val in node.elements:
+        keyEvaluated = boaEval(key, env)
+        if isError(keyEvaluated):
+            return keyEvaluated
+
+        if not keyEvaluated.objectType.isHashable:
+            return newError("Key not hashable: %s" % keyEvaluated.inspect())
+
+        valueEvaluated = boaEval(val, env)
+        if isError(valueEvaluated):
+            return valueEvaluated
+
+        pairs.append((keyEvaluated, valueEvaluated))
+
+    return newHash(pairs)
 
 def evalIdentifier(node, env):
     try:

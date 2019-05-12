@@ -20,6 +20,7 @@ EXPRESSION_TYPE_FUNC_LIT = "FUNC_LIT_EXPRESSION"
 EXPRESSION_TYPE_STR_LIT = "STR_LIT_EXPRESSION"
 EXPRESSION_TYPE_NULL_LIT = "NULL_LIT_EXPRESSION"
 EXPRESSION_TYPE_ARRAY_LIT = "ARRAY_LIT_EXPRESSION"
+EXPRESSION_TYPE_HASH_LIT = "HASH_LIT_EXPRESSION"
 EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
@@ -174,6 +175,18 @@ class ArrayLiteral(Expression):
 
     def __repr__(self):
         return '[%s]' % (','.join([str(e) for e in self.elements]))
+
+class HashLiteral(Expression):
+    def __init__(self, token, elements):
+        super(HashLiteral, self).__init__(EXPRESSION_TYPE_HASH_LIT, token)
+        self.value = elements #list of (k, v) tuples
+
+    @property
+    def elements(self):
+        return self.value
+
+    def __repr__(self):
+        return '{%s}' % (','.join(['%s:%s' % (k, v) for k, v in self.elements]))
 
 class FunctionLiteral(Expression):
     def __init__(self, token, parameters, body):

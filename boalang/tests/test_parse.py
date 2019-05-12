@@ -140,6 +140,9 @@ class TestParsing(unittest.TestCase):
             ('"foo" + "bar"', '("foo" + "bar")'),
             ('[1, 2, 3, "4", 5 + 6]', '[1,2,3,"4",(5 + 6)]'),
             ('arr[0+1] + arr[1+2]', '((arr[(0 + 1)]) + (arr[(1 + 2)]))'),
+            ('{1: 1, 2: 2}', '{1:1,2:2}'),
+            ('{a: 1, b: 2}', '{a:1,b:2}'),
+            ('{1 + 1: 2}', '{(1 + 1):2}'),
         ]
         self.parseAndCmpExprPairs(exprs)
 

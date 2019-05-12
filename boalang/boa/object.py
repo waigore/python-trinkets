@@ -5,6 +5,8 @@ OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
 OBJECT_TYPE_ARRAY = 'OBJECT_TYPE_ARRAY'
+OBJECT_TYPE_HASH = 'OBJECT_TYPE_HASH'
+OBJECT_TYPE_HASH_PAIR = 'OBJECT_TYPE_HASH_PAIR'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
@@ -16,18 +18,21 @@ class NoSuchObjectTypeError(Exception): pass
 class ObjectInstantiationError(Exception): pass
 
 class BoaObjectType(object):
-    def __init__(self, name, shortName):
+    def __init__(self, name, shortName, isHashable=False):
         self.name = name
         self.shortName = shortName
+        self.isHashable = isHashable
 
     def __repr__(self):
         return '[%s]' % self.shortName
 
 OBJECT_TYPES = DictLikeStruct({
-    OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int"),
-    OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean"),
-    OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string"),
+    OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int", isHashable=True),
+    OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean", isHashable=True),
+    OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string", isHashable=True),
     OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array"),
+    OBJECT_TYPE_HASH: BoaObjectType(OBJECT_TYPE_HASH, "hash"),
+    OBJECT_TYPE_HASH_PAIR: BoaObjectType(OBJECT_TYPE_HASH_PAIR, "hashPair"),
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
@@ -52,6 +57,9 @@ def newString(s):
 def newArray(els):
     return newObject(OBJECT_TYPE_ARRAY, els)
 
+def newHash(pairs):
+    return newObject(OBJECT_TYPE_HASH, pairs)
+
 def newReturnValue(obj):
     return newObject(OBJECT_TYPE_RETURN_VALUE, obj)
 
@@ -70,6 +78,9 @@ class BoaObject(object):
 
     def inspect(self):
         pass
+
+    def hashcode(self):
+        return hash(self.value)
 
 class BoaInteger(BoaObject):
     def __init__(self, value):
@@ -138,6 +149,38 @@ class BoaArray(BoaObject):
     def inspect(self):
         return '[%s]' % (', '.join([val.inspect() for val in self.value]))
 
+class BoaHash(BoaObject):
+    def __init__(self, pairs):
+        super(BoaHash, self).__init__(OBJECT_TYPES.OBJECT_TYPE_HASH)
+        self.value = {}
+        for k, v in pairs:
+            kHash = k.hashcode()
+            self.value[kHash] = BoaHashPair(k, v)
+
+    def __contains__(self, key):
+        keyHash = key.hashcode()
+        return keyHash in self.value
+
+    def __getitem__(self, key):
+        keyHash = key.hashcode()
+        return self.value[keyHash].value
+
+    def __setitem__(self, key, val):
+        keyHash = key.hashcode()
+        self.value[keyHash] = BoaHashPair(k, v)
+
+    def inspect(self):
+        return '{%s}' % (', '.join([hashPair.inspect() for hashPair in self.value.values()]))
+
+class BoaHashPair(BoaObject):
+    def __init__(self, key, val):
+        super(BoaHashPair, self).__init__(OBJECT_TYPES.OBJECT_TYPE_HASH_PAIR)
+        self.value = val
+        self.key = key
+
+    def inspect(self):
+        return '%s: %s' % (self.key.inspect(), self.value.inspect())
+
 class BoaError(BoaObject):
     def __init__(self, value):
         super(BoaError, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ERROR)
@@ -162,4 +205,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaBuiltinFunction,
     OBJECT_TYPE_STRING: BoaString,
     OBJECT_TYPE_ARRAY: BoaArray,
+    OBJECT_TYPE_HASH: BoaHash,
 })

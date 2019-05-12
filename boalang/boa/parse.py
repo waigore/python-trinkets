@@ -72,6 +72,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_STR, self.parseStringLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NULL, self.parseNullLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LBRACKET, self.parseArrayLiteral)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LBRACE, self.parseHashLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NOT, self.parsePrefixExpression)
@@ -417,6 +418,27 @@ class Parser(object):
         arrElements = self.parseExpressionList(TOKEN_TYPES.TOKEN_TYPE_RBRACKET)
 
         lit = ArrayLiteral(arrToken, arrElements)
+        return lit
+
+    def parseHashLiteral(self):
+        hashToken = self.curToken
+        pairs = []
+        while not self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE):
+            self.nextToken()
+            key = self.parseExpression(LOWEST)
+            if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_COLON):
+                return None
+            self.nextToken()
+            value = self.parseExpression(LOWEST)
+            pairs.append((key, value))
+            if not self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and  \
+                    not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_COMMA):
+                return None
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RBRACE):
+            return None
+
+        lit = HashLiteral(hashToken, pairs)
         return lit
 
     def parseExpressionList(self, endTokenType):
