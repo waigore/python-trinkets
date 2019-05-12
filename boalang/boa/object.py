@@ -18,10 +18,11 @@ class NoSuchObjectTypeError(Exception): pass
 class ObjectInstantiationError(Exception): pass
 
 class BoaObjectType(object):
-    def __init__(self, name, shortName, isHashable=False):
+    def __init__(self, name, shortName, isHashable=False, isIterable=False):
         self.name = name
         self.shortName = shortName
         self.isHashable = isHashable
+        self.isIterable = isIterable
 
     def __repr__(self):
         return '[%s]' % self.shortName
@@ -30,8 +31,8 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int", isHashable=True),
     OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean", isHashable=True),
     OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string", isHashable=True),
-    OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array"),
-    OBJECT_TYPE_HASH: BoaObjectType(OBJECT_TYPE_HASH, "hash"),
+    OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array", isIterable=True),
+    OBJECT_TYPE_HASH: BoaObjectType(OBJECT_TYPE_HASH, "hash", isIterable=True),
     OBJECT_TYPE_HASH_PAIR: BoaObjectType(OBJECT_TYPE_HASH_PAIR, "hashPair"),
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
@@ -146,6 +147,21 @@ class BoaArray(BoaObject):
         super(BoaArray, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ARRAY)
         self.value = elements
 
+    def __contains__(self, key):
+        for obj in self.value:
+            if obj.value == key.value:
+                return True
+        return False
+
+    def __len__(self):
+        return len(self.value)
+
+    def __getitem__(self, key):
+        return self.value[key.value]
+
+    def __setitem__(self, key, val):
+        self.value[key.value] = val
+
     def inspect(self):
         return '[%s]' % (', '.join([val.inspect() for val in self.value]))
 
@@ -157,6 +173,9 @@ class BoaHash(BoaObject):
             kHash = k.hashcode()
             self.value[kHash] = BoaHashPair(k, v)
 
+    def __len__(self):
+        return len(self.value.keys())
+
     def __contains__(self, key):
         keyHash = key.hashcode()
         return keyHash in self.value
@@ -167,7 +186,7 @@ class BoaHash(BoaObject):
 
     def __setitem__(self, key, val):
         keyHash = key.hashcode()
-        self.value[keyHash] = BoaHashPair(k, v)
+        self.value[keyHash] = BoaHashPair(key, val)
 
     def inspect(self):
         return '{%s}' % (', '.join([hashPair.inspect() for hashPair in self.value.values()]))

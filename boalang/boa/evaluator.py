@@ -71,12 +71,12 @@ def boaEval(node, env=None):
                 return val
             env.setIdentifier(node.identifier, val)
         elif stmtType == STATEMENT_TYPE_ASSIGN:
-            if not env.hasIdentifier(node.identifier):
-                return newError("Identifier not declared: %s" % node.identifier.value)
-            val = boaEval(node.value, env)
-            if isError(val):
-                return val
-            env.setIdentifier(node.identifier, val)
+            if node.identifier.expressionType == EXPRESSION_TYPE_INDEX:
+                return indexedAssignStatement(node, env)
+            elif node.identifier.expressionType == EXPRESSION_TYPE_IDENT:
+                return assignStatement(node, env)
+            else:
+                return newError("Identifier not valid: %s" % node.identifier)
     elif nodeType == NODE_TYPE_EXPRESSION:
         exprType = node.expressionType
         if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -174,6 +174,39 @@ def evalLoopBlockStatement(block, env): #returns true if loop execution should c
                     return result, False
 
     return result, True
+
+def indexedAssignStatement(node, env):
+    ident = node.identifier.left
+    if not env.hasIdentifier(ident):
+        return newError("Identifier not declared: %s" % ident.value)
+
+    idxEvaluated = boaEval(node.identifier.index, env)
+    if isError(idxEvaluated):
+        return idxEvaluated
+
+    variable = env.getIdentifier(ident)
+    if not variable.objectType.isIterable:
+        return newError("Identifier not subscriptable: %s" % ident.value)
+
+    val = boaEval(node.value, env)
+    if isError(val):
+        return val
+
+    try:
+        variable[idxEvaluated] = val
+    except:
+        return newError("Could not assign value to subscript %s of %s" % (idxEvaluated.inspect(), variable.objectType))
+
+def assignStatement(node, env):
+    ident = node.identifier
+    if not env.hasIdentifier(ident):
+        return newError("Identifier not declared: %s" % ident.value)
+
+    val = boaEval(node.value, env)
+    if isError(val):
+        return val
+
+    env.setIdentifier(node.identifier, val)
 
 def evalWhileStatement(node, env):
     result = None

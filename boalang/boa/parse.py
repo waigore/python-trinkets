@@ -43,6 +43,25 @@ class ParserError(object):
     def __repr__(self):
         return '[ParserError "%s"]' % self.msg
 
+class ParserSnapshot(object):
+    def __init__(self, parser):
+        self.parser = parser
+
+        self.curToken = parser.curToken
+        self.peekToken = parser.peekToken
+        self.readPosition = parser.lexer.readPosition
+        self.position = parser.lexer.position
+        self.ch = parser.lexer.ch
+        self.errors = list(parser.errors)
+
+    def restore(self):
+        self.parser.curToken = self.curToken
+        self.parser.peekToken = self.peekToken
+        self.parser.lexer.readPosition = self.readPosition
+        self.parser.lexer.position = self.position
+        self.parser.lexer.ch = self.ch
+        self.parser.errors = self.errors
+
 class Parser(object):
     def __init__(self, input):
         self.lexer = Lexer(input)
@@ -132,7 +151,7 @@ class Parser(object):
         self.errors.append(ParserError(msg))
 
     def noPrefixParseFnError(self, tokenType):
-        msg = 'No prefix parse function for %s found' % tokenType
+        msg = 'Unparseable token %s found' % tokenType
         self.errors.append(ParserError(msg))
 
     def nextToken(self):
@@ -154,6 +173,7 @@ class Parser(object):
         return program
 
     def parseStatement(self):
+        snapshot = ParserSnapshot(self)
         if self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_LET):
             return self.parseLetStatement()
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RETURN):
@@ -164,13 +184,24 @@ class Parser(object):
                 self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
             return self.parseLoopControlStatement()
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
-                self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
-            return self.parseAssignStatement()
+                (self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN) or \
+                self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET)):
+            assignStatement = self.parseAssignStatement()
+            if assignStatement is None and len(self.errors) > len(snapshot.errors):
+                snapshot.restore()
+                return self.parseExpressionStatement()
+            else:
+                return assignStatement
         else:
             return self.parseExpressionStatement()
 
     def parseAssignStatement(self):
-        ident = Identifier(self.curToken)
+        identToken = self.curToken
+        ident = Identifier(identToken)
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET):
+            self.nextToken()
+            ident = self.parseIndexExpression(ident)
 
         if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
             return None
@@ -178,7 +209,7 @@ class Parser(object):
         self.nextToken()
 
         value = self.parseExpression(LOWEST)
-        statement = AssignStatement(ident, ident, value)
+        statement = AssignStatement(identToken, ident, value)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()

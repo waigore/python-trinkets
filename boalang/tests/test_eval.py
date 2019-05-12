@@ -140,6 +140,19 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_assignments(self):
+        exprs = [
+            ("let a = 1; a = a + 1; a", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
+            ("let a = [1, 2, 3, 4, 5]; a[0] = 5; a[0]", OBJECT_TYPES.OBJECT_TYPE_INT, 5),
+            ("let a = [1, 2, 3, 4, 5]; let b = [3]; let c = a[0] + b[0]; c", OBJECT_TYPES.OBJECT_TYPE_INT, 4),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            env = Environment()
+            result = env.evaluate(code)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
     def test_evalErrors(self):
         exprs = [
             ("true + false", OBJECT_TYPES.OBJECT_TYPE_ERROR),
