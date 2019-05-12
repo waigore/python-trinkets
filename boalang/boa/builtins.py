@@ -15,6 +15,13 @@ def builtin_len(args):
     else:
         return newError("Argument to len not supported. Got %s" % arg.objectType)
 
+def builtin_print(args):
+    if len(args) == 0:
+        return newError("print expected at least 1 argument.")
+    inspected = [arg.inspect() for arg in args]
+    print(*inspected)
+
 BUILTIN_FUNCTIONS = {
     'len': newBuiltinFunction('len', builtin_len),
+    'print': newBuiltinFunction('print', builtin_print),
 }

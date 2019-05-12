@@ -18,9 +18,11 @@ EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
 EXPRESSION_TYPE_FUNC_LIT = "FUNC_LIT_EXPRESSION"
 EXPRESSION_TYPE_STR_LIT = "STR_LIT_EXPRESSION"
+EXPRESSION_TYPE_ARRAY_LIT = "ARRAY_LIT_EXPRESSION"
 EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
+EXPRESSION_TYPE_INDEX = "INDEX_EXPRESSION"
 EXPRESSION_TYPE_IF = "IF_EXPRESSION"
 EXPRESSION_TYPE_CALL = "CALL_EXPRESSION"
 
@@ -153,6 +155,18 @@ class StringLiteral(Expression):
     def __repr__(self):
         return '"%s"' % str(self.value)
 
+class ArrayLiteral(Expression):
+    def __init__(self, token, elements):
+        super(ArrayLiteral, self).__init__(EXPRESSION_TYPE_ARRAY_LIT, token)
+        self.value = elements
+
+    @property
+    def elements(self):
+        return self.value
+
+    def __repr__(self):
+        return '[%s]' % (','.join([str(e) for e in self.elements]))
+
 class FunctionLiteral(Expression):
     def __init__(self, token, parameters, body):
         super(FunctionLiteral, self).__init__(EXPRESSION_TYPE_FUNC_LIT, token)
@@ -181,6 +195,15 @@ class InfixExpression(Expression):
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
+
+class IndexExpression(Expression):
+    def __init__(self, token, left, index):
+        super(IndexExpression, self).__init__(EXPRESSION_TYPE_INDEX, token)
+        self.left = left #expression
+        self.index = index #expression
+
+    def __repr__(self):
+        return '(%s[%s])' % (self.left, self.index)
 
 class IfExpression(Expression):
     def __init__(self, token, conditionalBlocks, alternative):

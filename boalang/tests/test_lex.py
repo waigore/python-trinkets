@@ -170,6 +170,22 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])
 
+    def test_arrays(self):
+        code = """[1, '2']; """
+        l = Lexer(code)
+        tokens = l.lex()
+        tokenTypes = list(map(lambda t: t.tokenType, tokens))
+
+        self.assertEqual(tokenTypes, [
+            TOKEN_TYPES.TOKEN_TYPE_LBRACKET,
+            TOKEN_TYPES.TOKEN_TYPE_INT,
+            TOKEN_TYPES.TOKEN_TYPE_COMMA,
+            TOKEN_TYPES.TOKEN_TYPE_STR,
+            TOKEN_TYPES.TOKEN_TYPE_RBRACKET,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_EOF,
+        ])
+
     def test_strings(self):
         exprs = [
             ('"foobar"', [TOKEN_TYPES.TOKEN_TYPE_STR], ["foobar"]),

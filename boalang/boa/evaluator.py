@@ -2,6 +2,7 @@ from .token import TOKEN_TYPES
 from .object import (
     newInteger,
     newString,
+    newArray,
     newReturnValue,
     newError,
     newFunction,
@@ -12,6 +13,7 @@ from .object import (
     OBJECT_TYPE_INT,
     OBJECT_TYPE_BOOLEAN,
     OBJECT_TYPE_STRING,
+    OBJECT_TYPE_ARRAY,
     OBJECT_TYPE_FUNCTION,
     OBJECT_TYPE_BUILTIN_FUNCTION,
 )
@@ -31,9 +33,11 @@ from .ast import (
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_STR_LIT,
+    EXPRESSION_TYPE_ARRAY_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
+    EXPRESSION_TYPE_INDEX,
     EXPRESSION_TYPE_IF,
     EXPRESSION_TYPE_CALL,
 )
@@ -75,6 +79,11 @@ def boaEval(node, env=None):
             return newInteger(node.value)
         elif exprType == EXPRESSION_TYPE_STR_LIT:
             return newString(node.value)
+        elif exprType == EXPRESSION_TYPE_ARRAY_LIT:
+            elementsEvaluated = evalExpressions(node.elements, env)
+            if len(elementsEvaluated) == 1 and isError(elementsEvaluated[0]):
+                return elementsEvaluated[0]
+            return newArray(elementsEvaluated)
         elif exprType == EXPRESSION_TYPE_IDENT:
             return evalIdentifier(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
@@ -92,6 +101,14 @@ def boaEval(node, env=None):
             if isError(rightEvaluated):
                 return rightEvaluated
             return evalInfixExpression(node.operator, leftEvaluated, rightEvaluated, env)
+        elif exprType == EXPRESSION_TYPE_INDEX:
+            leftEvaluated = boaEval(node.left, env)
+            if isError(leftEvaluated):
+                return left
+            idxEvaluated = boaEval(node.index, env)
+            if isError(idxEvaluated):
+                return idx
+            return evalIndexExpression(leftEvaluated, idxEvaluated)
         elif exprType == EXPRESSION_TYPE_IF:
             return evalIfExpression(node, env)
         elif exprType == EXPRESSION_TYPE_FUNC_LIT:
@@ -189,6 +206,20 @@ def evalInfixExpression(operator, left, right, env):
         return evalStringInfixExpression(operator, left, right, env)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
+
+def evalIndexExpression(left, index):
+    if left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
+            index.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
+        return evalArrayIndexExpression(left, index)
+
+def evalArrayIndexExpression(left, index):
+    arr = left.value
+    idx = index.value
+    try:
+        val = arr[idx]
+    except:
+        return newError("Array index error: %s" % index.inspect())
+    return val
 
 def evalIfExpression(node, env):
     for condition, consequence in node.conditionalBlocks:

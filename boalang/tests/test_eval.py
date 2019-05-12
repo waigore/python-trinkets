@@ -77,6 +77,19 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_arrays(self):
+        exprs = [
+            ("[1, 2, 3, 4, 5]", OBJECT_TYPES.OBJECT_TYPE_ARRAY, "[1, 2, 3, 4, 5]"),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            p = Parser(code)
+            prog = p.parseProgram()
+
+            result = boaEval(prog)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.inspect(), expectedValue)
+
     def test_ifExpressions(self):
         exprs = [
             ("if (5 * 5 + 10 > 34) { 99 } else { 100 }", OBJECT_TYPES.OBJECT_TYPE_INT, 99),

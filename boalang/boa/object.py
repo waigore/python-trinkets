@@ -4,6 +4,7 @@ from .util import DictLikeStruct
 OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
+OBJECT_TYPE_ARRAY = 'OBJECT_TYPE_ARRAY'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
@@ -26,6 +27,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int"),
     OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean"),
     OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string"),
+    OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array"),
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
@@ -46,6 +48,9 @@ def newInteger(i):
 
 def newString(s):
     return newObject(OBJECT_TYPE_STRING, s)
+
+def newArray(els):
+    return newObject(OBJECT_TYPE_ARRAY, els)
 
 def newReturnValue(obj):
     return newObject(OBJECT_TYPE_RETURN_VALUE, obj)
@@ -125,6 +130,14 @@ class BoaBuiltinFunction(BoaObject):
     def inspect(self):
         return '[builtin]%s()' % (self.name)
 
+class BoaArray(BoaObject):
+    def __init__(self, elements):
+        super(BoaArray, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ARRAY)
+        self.value = elements
+
+    def inspect(self):
+        return '[%s]' % (', '.join([val.inspect() for val in self.value]))
+
 class BoaError(BoaObject):
     def __init__(self, value):
         super(BoaError, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ERROR)
@@ -148,4 +161,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_FUNCTION: BoaFunction,
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaBuiltinFunction,
     OBJECT_TYPE_STRING: BoaString,
+    OBJECT_TYPE_ARRAY: BoaArray,
 })

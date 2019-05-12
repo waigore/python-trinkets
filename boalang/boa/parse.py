@@ -12,9 +12,10 @@ SUM = 5
 PRODUCT = 6
 PREFIX = 7
 CALL = 8
+INDEX = 9
 
 PRECEDENCE_LIST = [
-    LOWEST, BOOL, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL
+    LOWEST, BOOL, EQUALS, LESSGREATER, SUM, PRODUCT, PREFIX, CALL, INDEX
 ]
 
 PRECEDENCE_MAP = DictLikeStruct({
@@ -32,6 +33,7 @@ PRECEDENCE_MAP = DictLikeStruct({
     TOKEN_TYPES.TOKEN_TYPE_SLASH: PRODUCT,
     TOKEN_TYPES.TOKEN_TYPE_ASTERISK: PRODUCT,
     TOKEN_TYPES.TOKEN_TYPE_LPAREN: CALL,
+    TOKEN_TYPES.TOKEN_TYPE_LBRACKET: INDEX,
 })
 
 class ParserError(object):
@@ -68,6 +70,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IDENT, self.parseIdentifier)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_STR, self.parseStringLiteral)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LBRACKET, self.parseArrayLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NOT, self.parsePrefixExpression)
@@ -90,6 +93,7 @@ class Parser(object):
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_AND, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_OR, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseCallExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LBRACKET, self.parseIndexExpression)
 
     def registerPrefix(self, tokenType, fn):
         self.prefixParseFns[tokenType.name] = fn
@@ -302,24 +306,19 @@ class Parser(object):
         return expr
 
     def parseCallArguments(self):
-        args = []
+        return self.parseExpressionList(TOKEN_TYPES.TOKEN_TYPE_RPAREN)
 
-        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
-            self.nextToken()
-            return args
+    def parseIndexExpression(self, left):
+        idxToken = self.curToken
 
         self.nextToken()
-        args.append(self.parseExpression(LOWEST))
+        idx = self.parseExpression(LOWEST)
 
-        while self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_COMMA):
-            self.nextToken()
-            self.nextToken()
-            args.append(self.parseExpression(LOWEST))
-
-        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RBRACKET):
             return None
 
-        return args
+        expr = IndexExpression(idxToken, left, idx)
+        return expr
 
     def parseGroupedExpression(self):
         self.nextToken()
@@ -407,6 +406,32 @@ class Parser(object):
     def parseStringLiteral(self):
         lit = StringLiteral(self.curToken, self.curToken.literal)
         return lit
+
+    def parseArrayLiteral(self):
+        arrToken = self.curToken
+        arrElements = self.parseExpressionList(TOKEN_TYPES.TOKEN_TYPE_RBRACKET)
+
+        lit = ArrayLiteral(arrToken, arrElements)
+        return lit
+
+    def parseExpressionList(self, endTokenType):
+        l = []
+        if self.peekTokenIs(endTokenType):
+            self.nextToken()
+            return l
+
+        self.nextToken()
+        l.append(self.parseExpression(LOWEST))
+
+        while self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_COMMA):
+            self.nextToken()
+            self.nextToken()
+            l.append(self.parseExpression(LOWEST))
+
+        if not self.expectPeek(endTokenType):
+            return None
+
+        return l
 
     def parseFunctionLiteral(self):
         fnToken = self.curToken
