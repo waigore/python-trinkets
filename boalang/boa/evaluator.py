@@ -237,7 +237,7 @@ def evalWhileStatement(node, env):
                 break
         else:
             break
-    return None
+    return result
 
 def evalPrefixExpression(operator, right, env):
     if operator == TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION.value:
@@ -270,6 +270,8 @@ def evalIndexExpression(left, index):
         return evalArrayIndexExpression(left, index)
     elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_HASH:
         return evalHashIndexExpression(left, index)
+    elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING:
+        return evalStringIndexExpression(left, index)
     else:
         return newError("Indexing not supported: %s[%s]" % (left.objectType, index.objectType))
 
@@ -287,6 +289,13 @@ def evalHashIndexExpression(left, index):
         val = left[index]
     except Exception as e:
         return newError("Hash index error: %s" % index.inspect())
+    return val
+
+def evalStringIndexExpression(left, index):
+    try:
+        val = left[index]
+    except Exception as e:
+        return newError("String index error: %s" % index.inspect())
     return val
 
 def evalIfExpression(node, env):
@@ -319,7 +328,9 @@ def applyFunction(function, args):
         innerEnv = extendFunctionEnv(function, args, function.env)
         evaluated = boaEval(function.body, innerEnv)
         if evaluated is None:
-            return NULL
+            return None
+        if isError(evaluated):
+            return evaluated
         return unwrapReturnValue(evaluated)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
         return function.func(args)
@@ -393,6 +404,10 @@ def evalBooleanInfixExpression(operator, left, right, env):
         return TRUE if leftVal == rightVal else FALSE
     elif operator == TOKEN_TYPES.TOKEN_TYPE_NEQ.value:
         return TRUE if leftVal != rightVal else FALSE
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_OR.value:
+        return TRUE if leftVal or rightVal else FALSE
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_AND.value:
+        return TRUE if leftVal and rightVal else FALSE
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 

@@ -32,7 +32,7 @@ class BoaObjectType(object):
 OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int", isHashable=True),
     OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean", isHashable=True),
-    OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string", isHashable=True),
+    OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string", isHashable=True, isIterable=True),
     OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array", isIterable=True),
     OBJECT_TYPE_HASH: BoaObjectType(OBJECT_TYPE_HASH, "hash", isIterable=True),
     OBJECT_TYPE_HASH_PAIR: BoaObjectType(OBJECT_TYPE_HASH_PAIR, "hashPair"),
@@ -99,6 +99,15 @@ class BoaString(BoaObject):
     def __init__(self, value):
         super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
         self.value = value
+
+    def __contains__(self, key):
+        return key.value in self.value
+
+    def __len__(self):
+        return len(self.value)
+
+    def __getitem__(self, key):
+        return newString(self.value[key.value])
 
     def inspect(self):
         return '%s' % (self.value)

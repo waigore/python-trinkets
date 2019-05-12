@@ -1,5 +1,6 @@
 import argparse
 from boa import Repl, Environment
+from boa.object import OBJECT_TYPES
 
 if __name__ == '__main__':
     argParser = argparse.ArgumentParser(description='Boa language interpreter')
@@ -11,7 +12,9 @@ if __name__ == '__main__':
             with open(script, 'r') as f:
                 code = f.read()
             env = Environment()
-            env.evaluate(code)
+            result = env.evaluate(code)
+            if result is not None and result.objectType == OBJECT_TYPES.OBJECT_TYPE_ERROR:
+                print(result.value)
     else:
         print('Boalang v1.0')
         repl = Repl()

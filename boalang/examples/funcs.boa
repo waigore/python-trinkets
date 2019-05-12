@@ -1,0 +1,16 @@
+let containsC = fn(s) {
+  let i = 0;
+  while (i < len(s)) {
+    let c = s[i];
+    if (c == 'c' or c == 'C') {
+      return true;
+    }
+    i = i + 1;
+  }
+
+  return false;
+}
+
+print(containsC("abcdef"));
+print(containsC("XXX"));
+print(containsC("abCdef"));
