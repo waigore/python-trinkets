@@ -98,8 +98,8 @@ class TestLexing(unittest.TestCase):
         self.assertEqual(x2.tokenType, TOKEN_TYPES.TOKEN_TYPE_IDENT)
         self.assertEqual(x2.literal, 'x2')
 
-    def test_lexBooleans(self):
-        code = """return true; return false;"""
+    def test_lexBooleansAndNull(self):
+        code = """return true; return false; null;"""
         l = Lexer(code)
         tokens = l.lex()
         tokenTypes = list(map(lambda t: t.tokenType, tokens))
@@ -110,6 +110,8 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
             TOKEN_TYPES.TOKEN_TYPE_RETURN,
             TOKEN_TYPES.TOKEN_TYPE_FALSE,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_NULL,
             TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
             TOKEN_TYPES.TOKEN_TYPE_EOF,
         ])

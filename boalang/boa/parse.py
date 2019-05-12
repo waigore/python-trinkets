@@ -70,6 +70,7 @@ class Parser(object):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IDENT, self.parseIdentifier)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_STR, self.parseStringLiteral)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NULL, self.parseNullLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_LBRACKET, self.parseArrayLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION, self.parsePrefixExpression)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_MINUS, self.parsePrefixExpression)
@@ -391,6 +392,10 @@ class Parser(object):
     def parseBoolean(self):
         bool = Boolean(self.curToken, self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_TRUE))
         return bool
+
+    def parseNullLiteral(self):
+        null = NullLiteral(self.curToken)
+        return null
 
     def parseIntegerLiteral(self):
         try:

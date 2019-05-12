@@ -35,6 +35,7 @@ from .ast import (
     EXPRESSION_TYPE_STR_LIT,
     EXPRESSION_TYPE_ARRAY_LIT,
     EXPRESSION_TYPE_BOOLEAN,
+    EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_INDEX,
@@ -88,6 +89,8 @@ def boaEval(node, env=None):
             return evalIdentifier(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
             return TRUE if node.value else FALSE
+        elif exprType == EXPRESSION_TYPE_NULL_LIT:
+            return NULL
         elif exprType == EXPRESSION_TYPE_PREFIX:
             rightEvaluated = boaEval(node.right, env)
             if isError(rightEvaluated):

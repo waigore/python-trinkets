@@ -18,6 +18,7 @@ EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
 EXPRESSION_TYPE_FUNC_LIT = "FUNC_LIT_EXPRESSION"
 EXPRESSION_TYPE_STR_LIT = "STR_LIT_EXPRESSION"
+EXPRESSION_TYPE_NULL_LIT = "NULL_LIT_EXPRESSION"
 EXPRESSION_TYPE_ARRAY_LIT = "ARRAY_LIT_EXPRESSION"
 EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
@@ -154,6 +155,13 @@ class StringLiteral(Expression):
 
     def __repr__(self):
         return '"%s"' % str(self.value)
+
+class NullLiteral(Expression):
+    def __init__(self, token):
+        super(NullLiteral, self).__init__(EXPRESSION_TYPE_NULL_LIT, token)
+
+    def __repr__(self):
+        return 'null'
 
 class ArrayLiteral(Expression):
     def __init__(self, token, elements):

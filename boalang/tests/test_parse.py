@@ -133,6 +133,7 @@ class TestParsing(unittest.TestCase):
             ("not a and b", "((not a) and b)"),
             ("true", "True"),
             ("false", "False"),
+            ("null", "null"),
             ("3 > 5 == false", "((3 > 5) == False)"),
             ("3 < 5 == true", "((3 < 5) == True)"),
             ("a + add(b * c) + d", "((a + add((b * c))) + d)"),

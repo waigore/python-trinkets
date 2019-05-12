@@ -129,6 +129,7 @@ class TestEval(unittest.TestCase):
         exprs = [
             ("""len("abc")""", OBJECT_TYPES.OBJECT_TYPE_INT, 3),
             ("""len("")""", OBJECT_TYPES.OBJECT_TYPE_INT, 0),
+            ("""len([1, 2, 3, 4, 5])""", OBJECT_TYPES.OBJECT_TYPE_INT, 5),
         ]
 
         for code, expectedType, expectedValue in exprs:
