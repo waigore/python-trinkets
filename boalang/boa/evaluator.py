@@ -10,6 +10,8 @@ from .object import (
     NULL,
     TRUE,
     FALSE,
+    BREAK,
+    CONTINUE,
     OBJECT_TYPES,
     OBJECT_TYPE_INT,
     OBJECT_TYPE_BOOLEAN,
@@ -58,6 +60,10 @@ def boaEval(node, env=None):
             return boaEval(node.expression, env)
         elif stmtType == STATEMENT_TYPE_BLOCK:
             return evalBlockStatement(node, env)
+        elif stmtType == STATEMENT_TYPE_BREAK:
+            return BREAK
+        elif stmtType == STATEMENT_TYPE_CONTINUE:
+            return CONTINUE
         elif stmtType == STATEMENT_TYPE_WHILE:
             return evalWhileStatement(node, env)
         elif stmtType == STATEMENT_TYPE_RETURN:
@@ -154,7 +160,11 @@ def evalBlockStatement(block, env):
         result = boaEval(statement, env)
         if result is not None:
             typ = result.objectType
-            if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE, OBJECT_TYPES.OBJECT_TYPE_ERROR]:
+            if typ in [
+                    OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE,
+                    OBJECT_TYPES.OBJECT_TYPE_ERROR,
+                    OBJECT_TYPES.OBJECT_TYPE_CONTINUE,
+                    OBJECT_TYPES.OBJECT_TYPE_BREAK]:
                 return result
 
     return result
@@ -162,16 +172,15 @@ def evalBlockStatement(block, env):
 def evalLoopBlockStatement(block, env): #returns true if loop execution should continue, false otherwise
     result = None
     for statement in block.statements:
-        if statement.statementType == STATEMENT_TYPE_BREAK:
-            return result, False
-        elif statement.statementType == STATEMENT_TYPE_CONTINUE:
-            return result, True
-        else:
-            result = boaEval(statement, env)
-            if result is not None:
-                typ = result.objectType
-                if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE, OBJECT_TYPES.OBJECT_TYPE_ERROR]:
-                    return result, False
+        result = boaEval(statement, env)
+        if result is not None:
+            typ = result.objectType
+            if typ in [OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE,
+                    OBJECT_TYPES.OBJECT_TYPE_ERROR,
+                    OBJECT_TYPES.OBJECT_TYPE_BREAK]:
+                return result, False
+            elif typ == OBJECT_TYPES.OBJECT_TYPE_CONTINUE:
+                return result, True
 
     return result, True
 
@@ -221,7 +230,7 @@ def evalWhileStatement(node, env):
                 break
         else:
             break
-    return result
+    return None
 
 def evalPrefixExpression(operator, right, env):
     if operator == TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION.value:
@@ -300,6 +309,8 @@ def applyFunction(function, args):
     if function.objectType == OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
         innerEnv = extendFunctionEnv(function, args, function.env)
         evaluated = boaEval(function.body, innerEnv)
+        if evaluated is None:
+            return NULL
         return unwrapReturnValue(evaluated)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
         return function.func(args)

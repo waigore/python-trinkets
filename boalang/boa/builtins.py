@@ -68,8 +68,10 @@ def builtin_push(args):
     if arrObj.objectType != OBJECT_TYPES.OBJECT_TYPE_ARRAY:
         return newError("Argument 1 to push must be array. Got %s" % arrObj.objectType)
 
-    newArrVal = arrObj.value + objs
-    return newArray(newArrVal)
+    #newArrVal = arrObj.value + objs
+    #return newArray(newArrVal)
+    arrObj.value.extend(objs)
+    return arrObj
 
 def builtin_print(args):
     if len(args) == 0:

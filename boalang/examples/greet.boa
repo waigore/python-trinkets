@@ -1,0 +1,6 @@
+let greet = fn(s) {
+  print("Hello " + s);
+}
+
+greet("World!");
+greet("Waiz");

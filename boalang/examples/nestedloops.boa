@@ -1,0 +1,24 @@
+let a = ["one", "two", "three", "four", "five"];
+let counter = 0;
+
+while (counter < len(a)) {
+  print(counter+1, ":", a[counter]);
+  counter = counter + 1;
+}
+
+let b = [];
+let i = 0;
+
+while (i < 3) {
+  let j = 0;
+  while (j < len(a)) {
+    push(b, a[j]);
+    j = j + 1;
+    if (j > 3) {
+      break;
+    }
+  }
+  i = i + 1;
+}
+
+print(b);

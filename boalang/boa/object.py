@@ -11,6 +11,8 @@ OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
+OBJECT_TYPE_CONTINUE = 'OBJECT_TYPE_CONTINUE'
+OBJECT_TYPE_BREAK = 'OBJECT_TYPE_BREAK'
 OBJECT_TYPE_ERROR = 'OBJECT_TYPE_ERROR'
 
 class NoSuchObjectTypeError(Exception): pass
@@ -36,6 +38,8 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_HASH_PAIR: BoaObjectType(OBJECT_TYPE_HASH_PAIR, "hashPair"),
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
+    OBJECT_TYPE_BREAK: BoaObjectType(OBJECT_TYPE_BREAK, "break"),
+    OBJECT_TYPE_CONTINUE: BoaObjectType(OBJECT_TYPE_CONTINUE, "continue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
@@ -97,7 +101,7 @@ class BoaString(BoaObject):
         self.value = value
 
     def inspect(self):
-        return '"%s"' % (self.value)
+        return '%s' % (self.value)
 
 class BoaBoolean(BoaObject):
     def __init__(self, value):
@@ -122,6 +126,22 @@ class BoaReturnValue(BoaObject):
 
     def inspect(self):
         return self.value.inspect()
+
+class BoaBreak(BoaObject):
+    def __init__(self):
+        super(BoaBreak, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BREAK)
+        self.value = None
+
+    def inspect(self):
+        return "break"
+
+class BoaContinue(BoaObject):
+    def __init__(self):
+        super(BoaContinue, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CONTINUE)
+        self.value = None
+
+    def inspect(self):
+        return "continue"
 
 class BoaFunction(BoaObject):
     def __init__(self, parameters, body, env):
@@ -215,6 +235,8 @@ class BoaError(BoaObject):
 NULL = BoaNull()
 TRUE = BoaBoolean(True)
 FALSE = BoaBoolean(False)
+BREAK = BoaBreak()
+CONTINUE = BoaContinue()
 
 OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_INT: BoaInteger,
