@@ -10,7 +10,7 @@ OPTRUE = b'\x06'
 OPFALSE = b'\x07'
 OPEQ = b'\x08'
 OPNEQ = b'\x09'
-OPGT = b'\x10'
+OPGT = b'\x0A'
 OPGTEQ = b'\x0B'
 
 class BoaNoSuchOpcodeError(Exception): pass
