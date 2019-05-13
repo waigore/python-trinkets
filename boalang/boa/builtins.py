@@ -6,6 +6,7 @@ from .object import (
     newArray,
     newString,
     OBJECT_TYPES,
+    NULL,
 )
 
 def builtin_len(args):
