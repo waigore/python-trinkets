@@ -7,11 +7,19 @@ from .code import (
     OPMUL,
     OPDIV,
     OPPOP,
+    OPTRUE,
+    OPFALSE,
+    OPEQ,
+    OPNEQ,
+    OPGT,
+    OPGTEQ,
     readUint16,
 )
 from .object import (
     newInteger,
     OBJECT_TYPES,
+    TRUE,
+    FALSE,
 )
 
 STACK_SIZE = 2048
@@ -58,11 +66,52 @@ class VM(object):
                 constIndex = readUint16(self.instr[ip+1:])
                 ip += 2
                 self.push(self.constants[constIndex])
+            elif op in (OPEQ, OPNEQ, OPGT, OPGTEQ):
+                self.executeComparison(op)
             elif op in (OPADD, OPSUB, OPMUL, OPDIV):
                 self.executeBinaryOperation(op)
+            elif op == OPTRUE:
+                self.push(TRUE)
+            elif op == OPFALSE:
+                self.push(FALSE)
             elif op == OPPOP:
                 self.pop()
             ip += 1
+
+    def executeComparison(self, op):
+        right = self.pop()
+        left = self.pop()
+
+        if left.objectType == OBJECT_TYPES.OBJECT_TYPE_INT and \
+                right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
+            return self.executeIntegerComparison(op, left, right)
+        if op == OPEQ:
+            return self.push(self.nativeBooleanToBooleanObject(right == left))
+        elif op == OPNEQ:
+            return self.push(self.nativeBooleanToBooleanObject(right != left))
+        else:
+            raise BoaVMError("Unsupported for boolean comparison: %d" % (op))
+
+    def executeIntegerComparison(self, op, left, right):
+        leftValue = left.value
+        rightValue = right.value
+
+        if op == OPEQ:
+            return self.push(self.nativeBooleanToBooleanObject(leftValue == rightValue))
+        elif op == OPNEQ:
+            return self.push(self.nativeBooleanToBooleanObject(leftValue != rightValue))
+        elif op == OPGT:
+            return self.push(self.nativeBooleanToBooleanObject(leftValue > rightValue))
+        elif op == OPGTEQ:
+            return self.push(self.nativeBooleanToBooleanObject(leftValue > rightValue))
+        else:
+            raise BoaVMError("Unsupported for integer comparison: %d" % (op))
+
+    def nativeBooleanToBooleanObject(self, bool):
+        if bool:
+            return TRUE
+        else:
+            return FALSE
 
     def executeBinaryOperation(self, op):
         right = self.pop()

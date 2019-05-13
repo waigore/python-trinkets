@@ -7,6 +7,9 @@ from boa.code import (
     OPCONSTANT,
     OPADD,
     OPPOP,
+    OPGT,
+    OPTRUE,
+    OPFALSE,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -46,7 +49,7 @@ class TestCompilation(unittest.TestCase):
         helper.checkConstantsExpected([3, 5])
 
     def test_expressions(self):
-        helper = CompileHelper(self, '3 + 5; 2')
+        helper = CompileHelper(self, '3 + 5; 2; true; false')
         helper.checkInstructionsExpected([
             makeInstr(OPCONSTANT, 0),
             makeInstr(OPCONSTANT, 1),
@@ -54,8 +57,20 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPPOP),
             makeInstr(OPCONSTANT, 2),
             makeInstr(OPPOP),
+            makeInstr(OPTRUE),
+            makeInstr(OPPOP),
+            makeInstr(OPFALSE),
+            makeInstr(OPPOP),
         ])
         helper.checkConstantsExpected([3, 5, 2])
+
+        helper = CompileHelper(self, '1 < 2')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPGT),
+            makeInstr(OPPOP),
+        ])
 
 if __name__ == '__main__':
     unittest.main()

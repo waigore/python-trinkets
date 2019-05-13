@@ -6,6 +6,12 @@ OPPOP = b'\x02'
 OPSUB = b'\x03'
 OPMUL = b'\x04'
 OPDIV = b'\x05'
+OPTRUE = b'\x06'
+OPFALSE = b'\x07'
+OPEQ = b'\x08'
+OPNEQ = b'\x09'
+OPGT = b'\x10'
+OPGTEQ = b'\x0B'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -23,6 +29,12 @@ DEFINITIONS = DictLikeStruct({
     OPSUB: Definition("OpSub", []),
     OPMUL: Definition("OpMul", []),
     OPDIV: Definition("OpDiv", []),
+    OPTRUE: Definition("OpTrue", []),
+    OPFALSE: Definition("OpFalse", []),
+    OPEQ: Definition("OpEq", []),
+    OPNEQ: Definition("OpNeq", []),
+    OPGT: Definition("OpGt", []),
+    OPGTEQ: Definition("OpGtEq", []),
 })
 
 def lookupOpcode(b):

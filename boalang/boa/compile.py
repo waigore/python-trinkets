@@ -6,6 +6,7 @@ from .ast import (
     NODE_TYPE_EXPRESSION,
     STATEMENT_TYPE_EXPRESSION,
     EXPRESSION_TYPE_INT_LIT,
+    EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_INFIX,
 )
 from .token import (
@@ -22,6 +23,12 @@ from .code import (
     OPMUL,
     OPDIV,
     OPPOP,
+    OPTRUE,
+    OPFALSE,
+    OPEQ,
+    OPNEQ,
+    OPGT,
+    OPGTEQ,
 )
 
 class BoaCompilerError(Exception): pass
@@ -55,7 +62,22 @@ class Compiler(object):
             if exprType == EXPRESSION_TYPE_INT_LIT:
                 intObj = newInteger(node.value)
                 self.emit(OPCONSTANT, self.addConstant(intObj))
+            elif exprType == EXPRESSION_TYPE_BOOLEAN:
+                if node.value:
+                    self.emit(OPTRUE)
+                else:
+                    self.emit(OPFALSE)
             elif exprType == EXPRESSION_TYPE_INFIX:
+                if node.operator == TOKEN_TYPES.TOKEN_TYPE_LT.value:
+                    self.compile(node.right)
+                    self.compile(node.left)
+                    self.emit(OPGT)
+                    return
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_LTEQ.value:
+                    self.compile(node.right)
+                    self.compile(node.left)
+                    self.emit(OPGTEQ)
+                    return
                 self.compile(node.left)
                 self.compile(node.right)
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
@@ -66,6 +88,14 @@ class Compiler(object):
                     self.emit(OPMUL)
                 elif node.operator == TOKEN_TYPES.TOKEN_TYPE_SLASH.value:
                     self.emit(OPDIV)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_EQ.value:
+                    self.emit(OPEQ)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_NEQ.value:
+                    self.emit(OPNEQ)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_GT.value:
+                    self.emit(OPGT)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_GTEQ.value:
+                    self.emit(OPGTEQ)
                 else:
                     raise BoaCompilerError("Unknown operator: %s" % node.operator)
 

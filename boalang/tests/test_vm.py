@@ -38,7 +38,7 @@ class VMHelper(object):
         self.testCase.assertEqual(obj.inspect(), expectedValue)
 
 class TestVM(unittest.TestCase):
-    def test_infixOperatiosn(self):
+    def test_infixOperations(self):
         helper = VMHelper(self, '3 + 5')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '8')
 
@@ -50,3 +50,24 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, '5 * (2 + 10)')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '60')
+
+        helper = VMHelper(self, 'true')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'false')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'false')
+
+        helper = VMHelper(self, 'true == false')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'false')
+
+        helper = VMHelper(self, 'true == true')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, '1 < 2')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, '1 > 2 + 3')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'false')
+
+        helper = VMHelper(self, '1 + 1 == 2')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
