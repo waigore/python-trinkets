@@ -13,6 +13,8 @@ from .code import (
     OPNEQ,
     OPGT,
     OPGTEQ,
+    OPMINUS,
+    OPNOT,
     readUint16,
 )
 from .object import (
@@ -70,6 +72,10 @@ class VM(object):
                 self.executeComparison(op)
             elif op in (OPADD, OPSUB, OPMUL, OPDIV):
                 self.executeBinaryOperation(op)
+            elif op == OPNOT:
+                self.executeNotOperator()
+            elif op == OPMINUS:
+                self.executeMinusOperator()
             elif op == OPTRUE:
                 self.push(TRUE)
             elif op == OPFALSE:
@@ -112,6 +118,21 @@ class VM(object):
             return TRUE
         else:
             return FALSE
+
+    def executeNotOperator(self):
+        operand = self.pop()
+        if operand == TRUE:
+            return self.push(FALSE)
+        elif operand == FALSE:
+            return self.push(TRUE)
+        else:
+            return self.push(FALSE)
+
+    def executeMinusOperator(self):
+        operand = self.pop()
+        if operand.objectType != OBJECT_TYPES.OBJECT_TYPE_INT:
+            raise BoaVMError("Unsupported type for negation: %s" % operand.objectType)
+        return self.push(newInteger(-operand.value))
 
     def executeBinaryOperation(self, op):
         right = self.pop()

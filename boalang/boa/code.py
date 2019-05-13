@@ -12,6 +12,8 @@ OPEQ = b'\x08'
 OPNEQ = b'\x09'
 OPGT = b'\x0A'
 OPGTEQ = b'\x0B'
+OPMINUS = b'\x0C'
+OPNOT = b'\x0D'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -35,6 +37,8 @@ DEFINITIONS = DictLikeStruct({
     OPNEQ: Definition("OpNeq", []),
     OPGT: Definition("OpGt", []),
     OPGTEQ: Definition("OpGtEq", []),
+    OPMINUS: Definition("OpMinus", []),
+    OPNOT: Definition("OpNot", []),
 })
 
 def lookupOpcode(b):

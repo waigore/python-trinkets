@@ -8,6 +8,7 @@ from .ast import (
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_INFIX,
+    EXPRESSION_TYPE_PREFIX,
 )
 from .token import (
     TOKEN_TYPES,
@@ -29,6 +30,8 @@ from .code import (
     OPNEQ,
     OPGT,
     OPGTEQ,
+    OPMINUS,
+    OPNOT,
 )
 
 class BoaCompilerError(Exception): pass
@@ -67,6 +70,14 @@ class Compiler(object):
                     self.emit(OPTRUE)
                 else:
                     self.emit(OPFALSE)
+            elif exprType == EXPRESSION_TYPE_PREFIX:
+                self.compile(node.right)
+                if node.operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:
+                    self.emit(OPMINUS)
+                elif node.operator in [TOKEN_TYPES.TOKEN_TYPE_NOT.value, TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION.value]:
+                    self.emit(OPNOT)
+                else:
+                    raise BoaCompilerError("Unknown prefix operator: %s" % node.operator)
             elif exprType == EXPRESSION_TYPE_INFIX:
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_LT.value:
                     self.compile(node.right)
@@ -97,7 +108,7 @@ class Compiler(object):
                 elif node.operator == TOKEN_TYPES.TOKEN_TYPE_GTEQ.value:
                     self.emit(OPGTEQ)
                 else:
-                    raise BoaCompilerError("Unknown operator: %s" % node.operator)
+                    raise BoaCompilerError("Unknown infix operator: %s" % node.operator)
 
     def addConstant(self, c):
         self.constants.append(c)

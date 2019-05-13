@@ -10,6 +10,8 @@ from boa.code import (
     OPGT,
     OPTRUE,
     OPFALSE,
+    OPMINUS,
+    OPNOT,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -69,6 +71,13 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 0),
             makeInstr(OPCONSTANT, 1),
             makeInstr(OPGT),
+            makeInstr(OPPOP),
+        ])
+
+        helper = CompileHelper(self, '-5')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPMINUS),
             makeInstr(OPPOP),
         ])
 

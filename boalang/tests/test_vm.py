@@ -71,3 +71,15 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, '1 + 1 == 2')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, '--5')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '5')
+
+        helper = VMHelper(self, 'not true == false')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'not true == !true')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'not not false == ! not false')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
