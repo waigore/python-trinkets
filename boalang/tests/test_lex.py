@@ -135,7 +135,7 @@ class TestLexing(unittest.TestCase):
         ])
 
     def test_lexAndOr(self):
-        code = """a and b; aandb; a or b; """
+        code = """a and b; aandb; a or b; a notin b; """
         l = Lexer(code)
         tokens = l.lex()
         tokenTypes = list(map(lambda t: t.tokenType, tokens))
@@ -149,6 +149,10 @@ class TestLexing(unittest.TestCase):
             TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
             TOKEN_TYPES.TOKEN_TYPE_IDENT,
             TOKEN_TYPES.TOKEN_TYPE_OR,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
+            TOKEN_TYPES.TOKEN_TYPE_IDENT,
+            TOKEN_TYPES.TOKEN_TYPE_NOTIN,
             TOKEN_TYPES.TOKEN_TYPE_IDENT,
             TOKEN_TYPES.TOKEN_TYPE_SEMICOLON,
             TOKEN_TYPES.TOKEN_TYPE_EOF,

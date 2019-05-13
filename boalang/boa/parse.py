@@ -23,7 +23,8 @@ PRECEDENCE_MAP = DictLikeStruct({
     TOKEN_TYPES.TOKEN_TYPE_OR: BOOL,
     TOKEN_TYPES.TOKEN_TYPE_EQ: EQUALS,
     TOKEN_TYPES.TOKEN_TYPE_NEQ: EQUALS,
-    TOKEN_TYPES.TOKEN_TYPE_IN: EQUALS,
+    TOKEN_TYPES.TOKEN_TYPE_IN: LESSGREATER,
+    TOKEN_TYPES.TOKEN_TYPE_NOTIN: LESSGREATER,
     TOKEN_TYPES.TOKEN_TYPE_LT: LESSGREATER,
     TOKEN_TYPES.TOKEN_TYPE_GT: LESSGREATER,
     TOKEN_TYPES.TOKEN_TYPE_LTEQ: LESSGREATER,
@@ -111,6 +112,7 @@ class Parser(object):
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LTEQ, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_GTEQ, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_IN, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_NOTIN, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_AND, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_OR, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseCallExpression)
@@ -302,7 +304,7 @@ class Parser(object):
 
         forStatement = ForStatement(forToken, ident, iterable, blockStatement)
         return forStatement
-        
+
     def parseLoopControlStatement(self):
         curToken = self.curToken
         if self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):

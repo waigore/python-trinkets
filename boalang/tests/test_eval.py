@@ -61,6 +61,10 @@ class TestEval(unittest.TestCase):
             ("'foobar' + 'barfoo'", OBJECT_TYPES.OBJECT_TYPE_STRING, "foobarbarfoo"),
             ("'foobar' == 'barfoo'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
             ("'foobar' != 'barfoo'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("1 in [1, 2, 3]", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("1 notin [1, 2, 3]", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
+            ("1 notin [1, 2, 3] == not(1 in [1, 2, 3])", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("'1' in '123'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
         ]
 
         for code, expectedType, expectedValue in exprs:
@@ -72,6 +76,8 @@ class TestEval(unittest.TestCase):
     def test_arrays(self):
         exprs = [
             ("[1, 2, 3, 4, 5]", OBJECT_TYPES.OBJECT_TYPE_ARRAY, "[1, 2, 3, 4, 5]"),
+            ("[1] + [1]", OBJECT_TYPES.OBJECT_TYPE_ARRAY, "[1, 1]"),
+            ("[1] + ['1']", OBJECT_TYPES.OBJECT_TYPE_ARRAY, '[1, "1"]'),
         ]
 
         for code, expectedType, expectedValue in exprs:

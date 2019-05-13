@@ -279,8 +279,6 @@ def evalPrefixExpression(operator, right, env):
         return newError("Unknown operator: %s%s" % (operator, right.objectType))
 
 def evalInfixExpression(operator, left, right, env):
-    if left.objectType != right.objectType:
-        return newError("Type mismatch: %s %s " % (left.objectType, operator, right.objectType))
     if left.objectType == OBJECT_TYPES.OBJECT_TYPE_INT and \
             right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
         return evalIntegerInfixExpression(operator, left, right, env)
@@ -290,8 +288,21 @@ def evalInfixExpression(operator, left, right, env):
     elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING and \
             right.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING:
         return evalStringInfixExpression(operator, left, right, env)
+    elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
+            right.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY:
+        return evalArrayInfixExpression(operator, left, right, env)
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_IN.value and right.objectType.isIterable:
+        return evalInExpression(left, right)
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_NOTIN.value and right.objectType.isIterable:
+        return evalNotinExpression(left, right)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
+
+def evalInExpression(left, right):
+    return TRUE if left in right else FALSE
+
+def evalNotinExpression(left, right):
+    return TRUE if left not in right else FALSE
 
 def evalIndexExpression(left, index):
     if left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
@@ -475,6 +486,17 @@ def evalStringInfixExpression(operator, left, right, env):
         return TRUE if leftVal == rightVal else FALSE
     elif operator == TOKEN_TYPES.TOKEN_TYPE_NEQ.value:
         return TRUE if leftVal != rightVal else FALSE
+    elif operator == TOKEN_TYPES.TOKEN_TYPE_IN.value:
+        return TRUE if leftVal in rightVal else FALSE
+    else:
+        return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
+
+def evalArrayInfixExpression(operator, left, right, env):
+    leftVal = left.value
+    rightVal = right.value
+
+    if operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
+        return newArray(leftVal + rightVal)
     else:
         return newError("Unknown operator: %s %s %s" % (left.objectType, operator, right.objectType))
 
