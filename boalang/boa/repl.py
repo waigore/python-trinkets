@@ -2,6 +2,7 @@ from .parse import Parser
 from .lex import Lexer
 from .evaluator import boaEval
 from .environment import Environment, BoaParserError
+from .object import OBJECT_TYPES
 
 try:
     import readline
@@ -25,7 +26,7 @@ class Repl(object):
 
             try:
                 evaluated = self.env.evaluate(line)
-                if evaluated is not None:
+                if evaluated is not None and evaluated.objectType != OBJECT_TYPES.OBJECT_TYPE_NULL:
                     print(evaluated.inspect())
             except BoaParserError as bpe:
                 for err in bpe.errors:

@@ -76,8 +76,9 @@ def builtin_push(args):
 def builtin_print(args):
     if len(args) == 0:
         return newError("print expected at least 1 argument.")
-    inspected = [arg.inspect() for arg in args]
-    print(*inspected)
+    argsStringified = [str(arg) for arg in args]
+    print(*argsStringified)
+    return NULL
 
 BUILTIN_FUNCTIONS = {
     'len': newBuiltinFunction('len', builtin_len),

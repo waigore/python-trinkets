@@ -92,6 +92,9 @@ class BoaInteger(BoaObject):
         super(BoaInteger, self).__init__(OBJECT_TYPES.OBJECT_TYPE_INT)
         self.value = value
 
+    def __repr__(self):
+        return "%d" % (self.value)
+
     def inspect(self):
         return "%d" % (self.value)
 
@@ -109,13 +112,19 @@ class BoaString(BoaObject):
     def __getitem__(self, key):
         return newString(self.value[key.value])
 
+    def __repr__(self):
+        return "%s" % (self.value)
+
     def inspect(self):
-        return '%s' % (self.value)
+        return '"%s"' % (self.value)
 
 class BoaBoolean(BoaObject):
     def __init__(self, value):
         super(BoaBoolean, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN)
         self.value = value
+
+    def __repr__(self):
+        return "%s" % ("true" if self.value else "false")
 
     def inspect(self):
         return "%s" % ("true" if self.value else "false")
@@ -125,6 +134,9 @@ class BoaNull(BoaObject):
         super(BoaNull, self).__init__(OBJECT_TYPES.OBJECT_TYPE_NULL)
         self.value = None
 
+    def __repr__(self):
+        return "null"
+
     def inspect(self):
         return "null"
 
@@ -133,13 +145,19 @@ class BoaReturnValue(BoaObject):
         super(BoaReturnValue, self).__init__(OBJECT_TYPES.OBJECT_TYPE_RETURN_VALUE)
         self.value = value
 
+    def __repr__(self):
+        return "return %s" % self.value.inspect()
+
     def inspect(self):
-        return self.value.inspect()
+        return "return %s" % self.value.inspect()
 
 class BoaBreak(BoaObject):
     def __init__(self):
         super(BoaBreak, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BREAK)
         self.value = None
+
+    def __repr__(self):
+        return "break"
 
     def inspect(self):
         return "break"
@@ -148,6 +166,9 @@ class BoaContinue(BoaObject):
     def __init__(self):
         super(BoaContinue, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CONTINUE)
         self.value = None
+
+    def __repr__(self):
+        return "continue"
 
     def inspect(self):
         return "continue"
@@ -159,6 +180,9 @@ class BoaFunction(BoaObject):
         self.body = body #BlockStatement
         self.env = env #Environment
 
+    def __repr__(self):
+        return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
+
     def inspect(self):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
 
@@ -167,6 +191,9 @@ class BoaBuiltinFunction(BoaObject):
         super(BoaBuiltinFunction, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION)
         self.name = name
         self.func = func
+
+    def __repr__(self):
+        return '[builtin]%s()' % (self.name)
 
     def inspect(self):
         return '[builtin]%s()' % (self.name)
@@ -190,6 +217,9 @@ class BoaArray(BoaObject):
 
     def __setitem__(self, key, val):
         self.value[key.value] = val
+
+    def __repr__(self):
+        return '[%s]' % (', '.join([val.inspect() for val in self.value]))
 
     def inspect(self):
         return '[%s]' % (', '.join([val.inspect() for val in self.value]))
@@ -217,6 +247,9 @@ class BoaHash(BoaObject):
         keyHash = key.hashcode()
         self.value[keyHash] = BoaHashPair(key, val)
 
+    def __repr__(self):
+        return '{%s}' % (', '.join([hashPair.inspect() for hashPair in self.value.values()]))
+
     def inspect(self):
         return '{%s}' % (', '.join([hashPair.inspect() for hashPair in self.value.values()]))
 
@@ -225,6 +258,9 @@ class BoaHashPair(BoaObject):
         super(BoaHashPair, self).__init__(OBJECT_TYPES.OBJECT_TYPE_HASH_PAIR)
         self.value = val
         self.key = key
+
+    def __repr__(self):
+        return '%s: %s' % (self.key.inspect(), self.value.inspect())
 
     def inspect(self):
         return '%s: %s' % (self.key.inspect(), self.value.inspect())
@@ -238,8 +274,11 @@ class BoaError(BoaObject):
     def message(self):
         return self.value
 
+    def __repr__(self):
+        return 'ERROR: ' + self.value
+
     def inspect(self):
-        return 'ERROR:' + self.value
+        return 'ERROR: ' + self.value
 
 NULL = BoaNull()
 TRUE = BoaBoolean(True)
