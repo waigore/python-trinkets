@@ -9,6 +9,8 @@ from .ast import (
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
+    EXPRESSION_TYPE_IF,
+    STATEMENT_TYPE_BLOCK,
 )
 from .token import (
     TOKEN_TYPES,
@@ -32,6 +34,8 @@ from .code import (
     OPGTEQ,
     OPMINUS,
     OPNOT,
+    OPJUMP,
+    OPJUMPNOTTRUE,
 )
 
 class BoaCompilerError(Exception): pass
@@ -45,10 +49,17 @@ class Bytecode(object):
     def instr(self):
         return b''.join(self.instructions)
 
+class EmittedInstruction(object):
+    def __init__(self, opcode, position):
+        self.opcode = opcode
+        self.position = position
+
 class Compiler(object):
     def __init__(self):
         self.instructions = [] #bytecode instructions
         self.constants = [] #BoaObjects
+        self.lastInstruction = None
+        self.previousInstruction = None
 
     def compile(self, node):
         nodeType = node.nodeType
@@ -60,6 +71,9 @@ class Compiler(object):
             if stmtType == STATEMENT_TYPE_EXPRESSION:
                 self.compile(node.expression)
                 self.emit(OPPOP)
+            elif stmtType == STATEMENT_TYPE_BLOCK:
+                for statement in node.statements:
+                    self.compile(statement)
         elif nodeType == NODE_TYPE_EXPRESSION:
             exprType = node.expressionType
             if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -70,6 +84,25 @@ class Compiler(object):
                     self.emit(OPTRUE)
                 else:
                     self.emit(OPFALSE)
+            elif exprType == EXPRESSION_TYPE_IF:
+                condition, consequence = node.conditionalBlocks[0]
+                self.compile(condition)
+                jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
+                self.compile(consequence)
+                if self.lastInstructionIs(OPPOP):
+                    self.removeLast()
+                if not node.alternative:
+                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
+                    self.changeOperand(jumpNotTruePos, afterConsequencePos)
+                else:
+                    jumpPos = self.emit(OPJUMP, 9999)
+                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
+                    self.changeOperand(jumpNotTruePos, afterConsequencePos)
+                    self.compile(node.alternative)
+                    if self.lastInstructionIs(OPPOP):
+                        self.removeLast()
+                    afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
+                    self.changeOperand(jumpPos, afterAlternativePos)
             elif exprType == EXPRESSION_TYPE_PREFIX:
                 self.compile(node.right)
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:
@@ -117,7 +150,34 @@ class Compiler(object):
     def emit(self, opcode, *operands):
         instr = makeInstr(opcode, *operands)
         pos = self.addInstruction(instr)
+        self.setLastInstruction(opcode, pos)
         return pos
+
+    def getInstrBytecodePos(self, pos):
+        instructionsUpTo = self.instructions[:pos]
+        instrBytes = b''.join(instructionsUpTo)
+        return len(instrBytes)
+
+    def setLastInstruction(self, opcode, pos):
+        prev = self.lastInstruction
+        last = EmittedInstruction(opcode, pos)
+        self.previousInstruction = prev
+        self.lastInstruction = last
+
+    def replaceInstruction(self, pos, newInstruction):
+        self.instructions[pos] = newInstruction
+
+    def changeOperand(self, opPos, operand):
+        opcode = self.instructions[opPos][0:1]
+        newInstr = makeInstr(opcode, operand)
+        self.replaceInstruction(opPos, newInstr)
+
+    def lastInstructionIs(self, opcode):
+        return self.lastInstruction.opcode == opcode
+
+    def removeLast(self):
+        self.instructions = self.instructions[:self.lastInstruction.position]
+        self.lastInstruction = self.previousInstruction
 
     def addInstruction(self, instr):
         posNewInstruction = len(self.instructions)

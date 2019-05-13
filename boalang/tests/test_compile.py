@@ -12,6 +12,8 @@ from boa.code import (
     OPFALSE,
     OPMINUS,
     OPNOT,
+    OPJUMP,
+    OPJUMPNOTTRUE,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -79,6 +81,18 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 0),
             makeInstr(OPMINUS),
             makeInstr(OPPOP),
+        ])
+
+        helper = CompileHelper(self, 'if (true) { 10 } else { 20 }; 3333;')
+        helper.checkInstructionsExpected([
+            makeInstr(OPTRUE), #0000
+            makeInstr(OPJUMPNOTTRUE, 10), #0001
+            makeInstr(OPCONSTANT, 0), #0004
+            makeInstr(OPJUMP, 13), #0007
+            makeInstr(OPCONSTANT, 1),#0010
+            makeInstr(OPPOP), #0013
+            makeInstr(OPCONSTANT, 2), #0014
+            makeInstr(OPPOP), #0017
         ])
 
 if __name__ == '__main__':
