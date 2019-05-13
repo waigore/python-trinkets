@@ -6,6 +6,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from boa.code import (
     OPCONSTANT,
     OPADD,
+    OPPOP,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -40,8 +41,21 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 0),
             makeInstr(OPCONSTANT, 1),
             makeInstr(OPADD),
+            makeInstr(OPPOP),
         ])
         helper.checkConstantsExpected([3, 5])
+
+    def test_expressions(self):
+        helper = CompileHelper(self, '3 + 5; 2')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPADD),
+            makeInstr(OPPOP),
+            makeInstr(OPCONSTANT, 2),
+            makeInstr(OPPOP),
+        ])
+        helper.checkConstantsExpected([3, 5, 2])
 
 if __name__ == '__main__':
     unittest.main()

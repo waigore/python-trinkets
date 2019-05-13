@@ -2,6 +2,10 @@ from .util import DictLikeStruct
 
 OPCONSTANT = b'\x00'
 OPADD = b'\x01'
+OPPOP = b'\x02'
+OPSUB = b'\x03'
+OPMUL = b'\x04'
+OPDIV = b'\x05'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -14,7 +18,11 @@ class Definition(object):
 
 DEFINITIONS = DictLikeStruct({
     OPCONSTANT: Definition("OpConstant", [2]),
-    OPADD: Definition("OpAdd", [])
+    OPADD: Definition("OpAdd", []),
+    OPPOP: Definition("OpPop", []),
+    OPSUB: Definition("OpSub", []),
+    OPMUL: Definition("OpMul", []),
+    OPDIV: Definition("OpDiv", []),
 })
 
 def lookupOpcode(b):

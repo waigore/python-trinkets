@@ -18,6 +18,10 @@ from .code import (
     makeInstr,
     OPCONSTANT,
     OPADD,
+    OPSUB,
+    OPMUL,
+    OPDIV,
+    OPPOP,
 )
 
 class BoaCompilerError(Exception): pass
@@ -45,6 +49,7 @@ class Compiler(object):
             stmtType = node.statementType
             if stmtType == STATEMENT_TYPE_EXPRESSION:
                 self.compile(node.expression)
+                self.emit(OPPOP)
         elif nodeType == NODE_TYPE_EXPRESSION:
             exprType = node.expressionType
             if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -55,6 +60,12 @@ class Compiler(object):
                 self.compile(node.right)
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
                     self.emit(OPADD)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:
+                    self.emit(OPSUB)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_ASTERISK.value:
+                    self.emit(OPMUL)
+                elif node.operator == TOKEN_TYPES.TOKEN_TYPE_SLASH.value:
+                    self.emit(OPDIV)
                 else:
                     raise BoaCompilerError("Unknown operator: %s" % node.operator)
 

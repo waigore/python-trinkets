@@ -32,15 +32,21 @@ class VMHelper(object):
             self.testCase.assertEqual(stackEl.objectType, expectedType)
             self.testCase.assertEqual(stackEl.inspect(), expectedVal)
 
-    def checkStackTopExpected(self, expectedType, expectedValue):
-        obj = self.vm.stackTop()
+    def checkLastPoppedExpected(self, expectedType, expectedValue):
+        obj = self.vm.lastPoppedStackEl()
         self.testCase.assertEqual(obj.objectType, expectedType)
         self.testCase.assertEqual(obj.inspect(), expectedValue)
 
 class TestVM(unittest.TestCase):
-    def test_opconstant(self):
+    def test_infixOperatiosn(self):
         helper = VMHelper(self, '3 + 5')
-        helper.checkStackTopExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '8')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '8')
 
-        helper = VMHelper(self, '1 + 2 + 3 + 4')
-        helper.checkStackTopExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+        helper = VMHelper(self, '1 + 2 - 3 + 4')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '4')
+
+        helper = VMHelper(self, '2 * 2 * 2 * 2')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '16')
+
+        helper = VMHelper(self, '5 * (2 + 10)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '60')

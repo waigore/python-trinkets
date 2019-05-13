@@ -3,10 +3,15 @@ from .code import (
     DEFINITIONS,
     OPCONSTANT,
     OPADD,
+    OPSUB,
+    OPMUL,
+    OPDIV,
+    OPPOP,
     readUint16,
 )
 from .object import (
     newInteger,
+    OBJECT_TYPES,
 )
 
 STACK_SIZE = 2048
@@ -24,6 +29,9 @@ class VM(object):
         if self.sp == 0:
             return None
         return self.stack[self.sp-1]
+
+    def lastPoppedStackEl(self):
+        return self.stack[self.sp]
 
     def inspectStack(self):
         if self.sp == 0:
@@ -50,11 +58,32 @@ class VM(object):
                 constIndex = readUint16(self.instr[ip+1:])
                 ip += 2
                 self.push(self.constants[constIndex])
-            elif op == OPADD:
-                right = self.pop()
-                left = self.pop()
-                leftValue = left.value
-                rightValue = right.value
-                result = leftValue + rightValue
-                self.push(newInteger(result))
+            elif op in (OPADD, OPSUB, OPMUL, OPDIV):
+                self.executeBinaryOperation(op)
+            elif op == OPPOP:
+                self.pop()
             ip += 1
+
+    def executeBinaryOperation(self, op):
+        right = self.pop()
+        left = self.pop()
+
+        if left.objectType == OBJECT_TYPES.OBJECT_TYPE_INT and \
+                right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
+            return self.executeBinaryIntegerOperation(op, left, right)
+        raise BoaVMError("Unsupported types for binary operation: %s %s" % (left.objectType, right.objectType))
+
+    def executeBinaryIntegerOperation(self, op, left, right):
+        leftValue = left.value
+        rightValue = right.value
+        if op == OPADD:
+            result = leftValue + rightValue
+        elif op == OPSUB:
+            result = leftValue - rightValue
+        elif op == OPMUL:
+            result = leftValue * rightValue
+        elif op == OPDIV:
+            result = leftValue / rightValue
+        else:
+            raise BoaVMError("Unknown integer operator: %d" % op)
+        self.push(newInteger(result))
