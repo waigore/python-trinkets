@@ -8,6 +8,7 @@ from boa.ast import (
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_BLOCK,
     STATEMENT_TYPE_WHILE,
+    STATEMENT_TYPE_FOR,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_PREFIX,
@@ -176,6 +177,17 @@ class TestParsing(unittest.TestCase):
         statement = prog.statements[0]
         self.assertEqual(statement.statementType, STATEMENT_TYPE_WHILE)
         self.assertEqual(str(statement), "while (True) {y}")
+
+    def test_for(self):
+        code = """for (i in list+list) { i + 1 }"""
+        p = Parser(code)
+        prog = p.parseProgram()
+
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_FOR)
+        self.assertEqual(str(statement), "for (i in (list + list)) {(i + 1)}")
 
     def test_functions(self):
         code = """fn (x, y) { return x + y; }"""

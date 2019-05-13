@@ -183,6 +183,8 @@ class Parser(object):
             return self.parseReturnStatement()
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_WHILE):
             return self.parseWhileStatement()
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_FOR):
+            return self.parseForStatement()
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_BREAK) or \
                 self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
             return self.parseLoopControlStatement()
@@ -273,6 +275,34 @@ class Parser(object):
         whileStatement = WhileStatement(whileToken, condition, blockStatement)
         return whileStatement
 
+    def parseForStatement(self):
+        forToken = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+            return None
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_IDENT):
+            return None
+
+        ident = Identifier(self.curToken)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_IN):
+            return None
+        self.nextToken()
+
+        iterable = self.parseExpression(LOWEST)
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RPAREN):
+            return None
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        blockStatement = self.parseBlockStatement()
+
+        forStatement = ForStatement(forToken, ident, iterable, blockStatement)
+        return forStatement
+        
     def parseLoopControlStatement(self):
         curToken = self.curToken
         if self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):

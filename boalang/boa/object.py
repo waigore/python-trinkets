@@ -103,6 +103,17 @@ class BoaString(BoaObject):
         super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
         self.value = value
 
+    def __iter__(self):
+        self.counter = 0
+        return self
+
+    def __next__(self):
+        if self.counter >= len(self.value):
+            raise StopIteration
+        val = newString(self.value[self.counter])
+        self.counter += 1
+        return val
+
     def __contains__(self, key):
         return key.value in self.value
 
@@ -203,6 +214,17 @@ class BoaArray(BoaObject):
         super(BoaArray, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ARRAY)
         self.value = elements
 
+    def __iter__(self):
+        self.counter = 0
+        return self
+
+    def __next__(self):
+        if self.counter >= len(self.value):
+            raise StopIteration
+        val = self.value[self.counter]
+        self.counter += 1
+        return val
+
     def __contains__(self, key):
         for obj in self.value:
             if obj.value == key.value:
@@ -231,6 +253,20 @@ class BoaHash(BoaObject):
         for k, v in pairs:
             kHash = k.hashcode()
             self.value[kHash] = BoaHashPair(k, v)
+        self.keySnapshot = None
+
+    def __iter__(self):
+        self.counter = 0
+        self.keySnapshot = list(self.value.keys())
+        return self
+
+    def __next__(self):
+        if self.counter >= len(self.keySnapshot):
+            self.keySnapshot = None
+            raise StopIteration
+        val = self.value[self.keySnapshot[self.counter]]
+        self.counter += 1
+        return val
 
     def __len__(self):
         return len(self.value.keys())

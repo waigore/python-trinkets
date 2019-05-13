@@ -11,6 +11,7 @@ STATEMENT_TYPE_RETURN = "RETURN_STATEMENT"
 STATEMENT_TYPE_EXPRESSION = "EXPRESSION_STATEMENT"
 STATEMENT_TYPE_BLOCK = "BLOCK_STATEMENT"
 STATEMENT_TYPE_WHILE = "WHILE_STATEMENT"
+STATEMENT_TYPE_FOR = "FOR_STATEMENT"
 STATEMENT_TYPE_BREAK = "BREAK_STATEMENT"
 STATEMENT_TYPE_CONTINUE = "CONTINUE_STATEMENT"
 
@@ -124,6 +125,19 @@ class WhileStatement(Statement):
 
     def __repr__(self):
         return 'while (%s) %s' % (self.condition, self.blockStatement)
+
+class ForStatement(Statement):
+    def __init__(self, token, iterator, iterable, blockStatement):
+        super(ForStatement, self).__init__(STATEMENT_TYPE_FOR, token, blockStatement)
+        self.iterable = iterable #expression evaluating to iterable
+        self.iterator = iterator
+
+    @property
+    def blockStatement(self):
+        return self.value
+
+    def __repr__(self):
+        return 'for (%s in %s) %s' % (self.iterator, self.iterable, self.blockStatement)
 
 class Identifier(Expression):
     def __init__(self, token, value=None):

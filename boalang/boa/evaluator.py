@@ -31,6 +31,7 @@ from .ast import (
     STATEMENT_TYPE_LET,
     STATEMENT_TYPE_ASSIGN,
     STATEMENT_TYPE_WHILE,
+    STATEMENT_TYPE_FOR,
     STATEMENT_TYPE_BREAK,
     STATEMENT_TYPE_CONTINUE,
     EXPRESSION_TYPE_IDENT,
@@ -66,6 +67,8 @@ def boaEval(node, env=None):
             return CONTINUE
         elif stmtType == STATEMENT_TYPE_WHILE:
             return evalWhileStatement(node, env)
+        elif stmtType == STATEMENT_TYPE_FOR:
+            return evalForStatement(node, env)
         elif stmtType == STATEMENT_TYPE_RETURN:
             val = boaEval(node.value, env)
             if isError(val):
@@ -242,6 +245,28 @@ def evalWhileStatement(node, env):
     if result is not None and result.objectType in [OBJECT_TYPES.OBJECT_TYPE_BREAK, OBJECT_TYPES.OBJECT_TYPE_CONTINUE]:
         return NULL
     return result
+
+def evalForStatement(node, env):
+    result = NULL
+    iterator = node.iterator
+    iterableEvaluated = boaEval(node.iterable, env)
+    if isError(iterableEvaluated):
+        return iterableEvaluated
+
+    if not iterableEvaluated.objectType.isIterable:
+        return newError("For expression not iterable: %s" % iterableEvaluated.inspect())
+
+    for obj in iterableEvaluated:
+        innerEnv = env.newInner()
+        innerEnv.declareIdentifier(iterator, obj)
+        result, continueExecution = evalLoopBlockStatement(node.blockStatement, innerEnv)
+        if not continueExecution:
+            break
+
+    if result is not None and result.objectType in [OBJECT_TYPES.OBJECT_TYPE_BREAK, OBJECT_TYPES.OBJECT_TYPE_CONTINUE]:
+        return NULL
+    return result
+
 
 def evalPrefixExpression(operator, right, env):
     if operator == TOKEN_TYPES.TOKEN_TYPE_EXCLAMATION.value:

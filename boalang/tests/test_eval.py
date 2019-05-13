@@ -150,6 +150,8 @@ class TestEval(unittest.TestCase):
              """, OBJECT_TYPES.OBJECT_TYPE_INT, 15),
              ("let a = if (true) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 1),
              ("let a = if (false) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
+             ("let a = 0; for (i in [1, 2, 3]) { a = a + i; } a", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
+             ("let a = 0; for (i in [1, 2, 3, 4, 5]) { a = a + i; if (a > 5) { break; } } a", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
              ("let nop = fn() {} let a = nop(); a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
              ("let adder = fn(amt) { return fn(x) {x+amt}}; let myAdder = adder(2); myAdder(5)", OBJECT_TYPES.OBJECT_TYPE_INT, 7),
         ]
