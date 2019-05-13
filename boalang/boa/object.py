@@ -262,9 +262,8 @@ class BoaHash(BoaObject):
 
     def __next__(self):
         if self.counter >= len(self.keySnapshot):
-            self.keySnapshot = None
             raise StopIteration
-        val = self.value[self.keySnapshot[self.counter]]
+        val = self.value[self.keySnapshot[self.counter]].value
         self.counter += 1
         return val
 
