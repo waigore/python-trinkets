@@ -77,6 +77,7 @@ def boaEval(node, env=None):
                 return val
             try:
                 env.declareIdentifier(node.identifier, val)
+                return NULL
             except Exception as e:
                 return newError(e.message)
         elif stmtType == STATEMENT_TYPE_ASSIGN:
@@ -143,10 +144,10 @@ def boaEval(node, env=None):
 
             return applyFunction(function, args)
 
-    return None
+    return newError("Could not evaluate: %s" % node)
 
 def evalProgram(program, env):
-    result = None
+    result = NULL
     for statement in program.statements:
         result = boaEval(statement, env)
         if result is not None:
@@ -158,7 +159,7 @@ def evalProgram(program, env):
     return result
 
 def evalBlockStatement(block, env):
-    result = None
+    result = NULL
     for statement in block.statements:
         result = boaEval(statement, env)
         if result is not None:
@@ -173,7 +174,7 @@ def evalBlockStatement(block, env):
     return result
 
 def evalLoopBlockStatement(block, env): #returns true if loop execution should continue, false otherwise
-    result = None
+    result = NULL
     for statement in block.statements:
         result = boaEval(statement, env)
         if result is not None:
@@ -220,25 +221,26 @@ def assignStatement(node, env):
 
     try:
         env.setIdentifier(node.identifier, val)
+        return NULL
     except Exception as e:
         return newError(e.message)
 
 def evalWhileStatement(node, env):
-    result = None
-    innerEnv = env.newInner()
+    result = NULL
     while True:
-        conditionEvaluated = boaEval(node.condition, innerEnv)
+        conditionEvaluated = boaEval(node.condition, env)
         if isError(conditionEvaluated):
             return conditionEvaluated
 
         if isTruthy(conditionEvaluated):
+            innerEnv = env.newInner()
             result, continueExecution = evalLoopBlockStatement(node.blockStatement, innerEnv)
             if not continueExecution:
                 break
         else:
             break
     if result is not None and result.objectType in [OBJECT_TYPES.OBJECT_TYPE_BREAK, OBJECT_TYPES.OBJECT_TYPE_CONTINUE]:
-        return None
+        return NULL
     return result
 
 def evalPrefixExpression(operator, right, env):
@@ -329,8 +331,6 @@ def applyFunction(function, args):
     if function.objectType == OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
         innerEnv = extendFunctionEnv(function, args, function.env)
         evaluated = boaEval(function.body, innerEnv)
-        if evaluated is None:
-            return None
         if isError(evaluated):
             return evaluated
         return unwrapReturnValue(evaluated)

@@ -132,6 +132,8 @@ class TestEval(unittest.TestCase):
             ("let a = 1; if (true) { a = 2; }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
             ("let a = 1; if (true) { let a = 2; }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 1),
             ("let a = 1; while (a < 10) { a = a + 1; } a", OBJECT_TYPES.OBJECT_TYPE_INT, 10),
+            ("let a = 1; let b = 0; while (a < 10) { a = a + 1; let b = a; } b", OBJECT_TYPES.OBJECT_TYPE_INT, 0),
+            ("let a = 1; let b = 0; while (a < 10) { a = a + 1; b = a; } b", OBJECT_TYPES.OBJECT_TYPE_INT, 10),
             ("""
              let a = 1;
              let b = 1;
@@ -148,6 +150,8 @@ class TestEval(unittest.TestCase):
              """, OBJECT_TYPES.OBJECT_TYPE_INT, 15),
              ("let a = if (true) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_INT, 1),
              ("let a = if (false) { 1 }; a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
+             ("let nop = fn() {} let a = nop(); a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
+             ("let adder = fn(amt) { return fn(x) {x+amt}}; let myAdder = adder(2); myAdder(5)", OBJECT_TYPES.OBJECT_TYPE_INT, 7),
         ]
 
         for code, expectedType, expectedValue in exprs:
