@@ -2,11 +2,10 @@ from .util import DictLikeStruct
 
 OPCONSTANT = b'\x00'
 OPADD = b'\x01'
-OPPUSH = b'\x01'
 
-class NoSuchOpcodeError(Exception): pass
+class BoaNoSuchOpcodeError(Exception): pass
 
-class OperandError(Exception): pass
+class BoaOperandError(Exception): pass
 
 class Definition(object):
     def __init__(self, name, operandWidths):
@@ -15,17 +14,18 @@ class Definition(object):
 
 DEFINITIONS = DictLikeStruct({
     OPCONSTANT: Definition("OpConstant", [2]),
+    OPADD: Definition("OpAdd", [])
 })
 
 def lookupOpcode(b):
     if not b in DEFINITIONS:
-        raise NoSuchOpcodeError(b)
+        raise BoaNoSuchOpcodeError(b)
     return DEFINITIONS[b]
 
 def makeInstr(opcode, *operands):
     definition = lookupOpcode(opcode)
     if len(operands) != len(definition.operandWidths):
-        raise OperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
+        raise BoaOperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
     instructionLen = 1
     for w in definition.operandWidths:
         instructionLen += w
@@ -51,11 +51,11 @@ def formatInstrs(instr):
 def formatInstr(definition, operands):
     operandCount = len(definition.operandWidths)
     if len(operands) != operandCount:
-        raise OperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
-    return "%s %s" % (definition.name, ''.join(['%d' % operand for operand in operands]))
+        raise BoaOperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
+    return "%s%s%s" % (definition.name, ' ' if operands else '', ''.join(['%d' % operand for operand in operands]))
 
 def readUint16(instr):
-    return int.from_bytes(instr, byteorder='big')
+    return int.from_bytes(instr[0:2], byteorder='big')
 
 def readOperands(definition, instr):
     operands = []

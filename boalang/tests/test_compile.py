@@ -3,7 +3,11 @@ import unittest
 import sys, os
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from boa.code import OPCONSTANT, makeInstr
+from boa.code import (
+    OPCONSTANT,
+    OPADD,
+    makeInstr,
+)
 from boa.compile import Compiler
 from boa.parse import Parser
 
@@ -35,6 +39,7 @@ class TestCompilation(unittest.TestCase):
         helper.checkInstructionsExpected([
             makeInstr(OPCONSTANT, 0),
             makeInstr(OPCONSTANT, 1),
+            makeInstr(OPADD),
         ])
         helper.checkConstantsExpected([3, 5])
 

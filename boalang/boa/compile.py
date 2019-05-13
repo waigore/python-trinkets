@@ -8,18 +8,28 @@ from .ast import (
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_INFIX,
 )
+from .token import (
+    TOKEN_TYPES,
+)
 from .object import (
     newInteger,
 )
 from .code import (
     makeInstr,
     OPCONSTANT,
+    OPADD,
 )
+
+class BoaCompilerError(Exception): pass
 
 class Bytecode(object):
     def __init__(self, instructions, constants):
         self.instructions = instructions #bytecode instructions
         self.constants = constants #BoaObjects
+
+    @property
+    def instr(self):
+        return b''.join(self.instructions)
 
 class Compiler(object):
     def __init__(self):
@@ -43,6 +53,10 @@ class Compiler(object):
             elif exprType == EXPRESSION_TYPE_INFIX:
                 self.compile(node.left)
                 self.compile(node.right)
+                if node.operator == TOKEN_TYPES.TOKEN_TYPE_PLUS.value:
+                    self.emit(OPADD)
+                else:
+                    raise BoaCompilerError("Unknown operator: %s" % node.operator)
 
     def addConstant(self, c):
         self.constants.append(c)
