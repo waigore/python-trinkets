@@ -144,6 +144,8 @@ class VM(object):
             return self.push(FALSE)
         elif operand == FALSE:
             return self.push(TRUE)
+        elif operand == NULL:
+            return self.push(TRUE)
         else:
             return self.push(FALSE)
 
