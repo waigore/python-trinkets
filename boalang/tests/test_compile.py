@@ -17,6 +17,7 @@ from boa.code import (
     OPNULL,
     OPGETGLOBAL,
     OPSETGLOBAL,
+    OPARRAY,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -192,6 +193,32 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 1), #0009
             makeInstr(OPADD), #0012
             makeInstr(OPPOP), #0013
+        ])
+
+    def test_arrays(self):
+        helper = CompileHelper(self, '[]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPARRAY, 0), #0009
+            makeInstr(OPPOP), #0012
+        ])
+
+        helper = CompileHelper(self, '[1, 2, 3]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPCONSTANT, 1), #0003
+            makeInstr(OPCONSTANT, 2), #0006
+            makeInstr(OPARRAY, 3), #0009
+            makeInstr(OPPOP), #0012
+        ])
+
+        helper = CompileHelper(self, '[1, 1 + 2]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPCONSTANT, 1), #0003
+            makeInstr(OPCONSTANT, 2), #0006
+            makeInstr(OPADD),
+            makeInstr(OPARRAY, 2), #0009
+            makeInstr(OPPOP), #0012
         ])
 
 if __name__ == '__main__':

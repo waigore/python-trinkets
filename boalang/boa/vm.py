@@ -20,11 +20,13 @@ from .code import (
     OPNULL,
     OPSETGLOBAL,
     OPGETGLOBAL,
+    OPARRAY,
     readUint16,
 )
 from .object import (
     newInteger,
     newString,
+    newArray,
     OBJECT_TYPES,
     TRUE,
     FALSE,
@@ -100,6 +102,12 @@ class VM(object):
                 self.push(FALSE)
             elif op == OPNULL:
                 self.push(NULL)
+            elif op == OPARRAY:
+                numElements = readUint16(self.instr[ip+1:])
+                ip += 2
+                arr = self.buildArray(self.sp-numElements, self.sp)
+                self.sp = self.sp - numElements
+                self.push(arr)
             elif op == OPPOP:
                 self.pop()
             elif op == OPSETGLOBAL:
@@ -121,6 +129,10 @@ class VM(object):
                     ip = pos - 1
 
             ip += 1
+
+    def buildArray(self, startIndex, endIndex):
+        elements = self.stack[startIndex:endIndex]
+        return newArray(elements)
 
     def executeComparison(self, op):
         right = self.pop()

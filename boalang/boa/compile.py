@@ -9,6 +9,7 @@ from .ast import (
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
+    EXPRESSION_TYPE_ARRAY_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INFIX,
@@ -44,6 +45,7 @@ from .code import (
     OPNULL,
     OPSETGLOBAL,
     OPGETGLOBAL,
+    OPARRAY,
 )
 from .symbol import (
     SymbolTable,
@@ -111,6 +113,10 @@ class Compiler(object):
                     self.emit(OPTRUE)
                 else:
                     self.emit(OPFALSE)
+            elif exprType == EXPRESSION_TYPE_ARRAY_LIT:
+                for el in node.elements:
+                    self.compile(el)
+                self.emit(OPARRAY, len(node.elements))
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_IDENT:
