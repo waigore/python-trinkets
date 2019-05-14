@@ -15,6 +15,9 @@ from .code import (
     OPGTEQ,
     OPMINUS,
     OPNOT,
+    OPJUMP,
+    OPJUMPNOTTRUE,
+    OPNULL,
     readUint16,
 )
 from .object import (
@@ -22,6 +25,10 @@ from .object import (
     OBJECT_TYPES,
     TRUE,
     FALSE,
+    NULL,
+)
+from .evaluator import (
+    isTruthy,
 )
 
 STACK_SIZE = 2048
@@ -80,8 +87,20 @@ class VM(object):
                 self.push(TRUE)
             elif op == OPFALSE:
                 self.push(FALSE)
+            elif op == OPNULL:
+                self.push(NULL)
             elif op == OPPOP:
                 self.pop()
+            elif op == OPJUMP:
+                pos = readUint16(self.instr[ip+1:])
+                ip = pos - 1
+            elif op == OPJUMPNOTTRUE:
+                pos = readUint16(self.instr[ip+1:])
+                ip += 2
+                condition = self.pop()
+                if not isTruthy(condition):
+                    ip = pos - 1
+
             ip += 1
 
     def executeComparison(self, op):

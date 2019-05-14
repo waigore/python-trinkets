@@ -83,3 +83,24 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, 'not not false == ! not false')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'if (true) { 10 } else { 20 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+
+        helper = VMHelper(self, 'if (false) { 10 } elif (true) { 20 } else { 30 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '20')
+
+        helper = VMHelper(self, 'if (false) { 10 } elif (true) { 20 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '20')
+
+        helper = VMHelper(self, 'if (false) { 10 } else {  }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_NULL, 'null')
+
+        helper = VMHelper(self, 'if (true) {  } else { 10 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_NULL, 'null')
+
+        helper = VMHelper(self, 'if (1 < 2) { 30 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '30')
+
+        helper = VMHelper(self, 'if (1 > 2) { 10 }')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_NULL, 'null')
