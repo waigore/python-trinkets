@@ -10,10 +10,12 @@ from .ast import (
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
     EXPRESSION_TYPE_ARRAY_LIT,
+    EXPRESSION_TYPE_HASH_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
+    EXPRESSION_TYPE_INDEX,
     EXPRESSION_TYPE_IF,
     STATEMENT_TYPE_BLOCK,
 )
@@ -46,6 +48,8 @@ from .code import (
     OPSETGLOBAL,
     OPGETGLOBAL,
     OPARRAY,
+    OPHASH,
+    OPINDEX,
 )
 from .symbol import (
     SymbolTable,
@@ -117,6 +121,21 @@ class Compiler(object):
                 for el in node.elements:
                     self.compile(el)
                 self.emit(OPARRAY, len(node.elements))
+            elif exprType == EXPRESSION_TYPE_HASH_LIT:
+                keys = []
+                vals = []
+                keyVals = {}
+                for el in node.elements:
+                    key, val = el
+                    keys.append(key)
+                    vals.append(val)
+                    keyVals[str(key)] = val
+                keys.sort(key=lambda e: str(e))
+
+                for key in keys:
+                    self.compile(key)
+                    self.compile(keyVals[str(key)])
+                self.emit(OPHASH, len(node.elements)*2)
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_IDENT:
@@ -125,6 +144,10 @@ class Compiler(object):
                 except SymbolNotFoundError as e:
                     raise BoaCompilerError("Identifier not defined: %s" % node.value)
                 self.emit(OPGETGLOBAL, symbol.index)
+            elif exprType == EXPRESSION_TYPE_INDEX:
+                self.compile(node.left)
+                self.compile(node.index)
+                self.emit(OPINDEX)
             elif exprType == EXPRESSION_TYPE_IF:
                 jumpPositions = []
                 for i, conditionalBlock in enumerate(node.conditionalBlocks):

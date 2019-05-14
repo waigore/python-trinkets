@@ -21,6 +21,8 @@ OPNULL = b'\x10'
 OPGETGLOBAL = b'\x11'
 OPSETGLOBAL = b'\x12'
 OPARRAY = b'\x13'
+OPHASH = b'\x14'
+OPINDEX = b'\x15'
 
 
 class BoaNoSuchOpcodeError(Exception): pass
@@ -54,6 +56,8 @@ DEFINITIONS = DictLikeStruct({
     OPGETGLOBAL: Definition("OpGetGlobal", [2]),
     OPSETGLOBAL: Definition("OpSetGlobal", [2]),
     OPARRAY: Definition("OpArray", [2]),
+    OPHASH: Definition("OpHash", [2]),
+    OPINDEX: Definition("OpIndex", []),
 })
 
 def lookupOpcode(b):

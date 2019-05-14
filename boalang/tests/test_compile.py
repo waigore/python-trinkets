@@ -6,6 +6,7 @@ sys.path.insert(1, os.path.join(sys.path[0], '..'))
 from boa.code import (
     OPCONSTANT,
     OPADD,
+    OPMUL,
     OPPOP,
     OPGT,
     OPTRUE,
@@ -18,6 +19,8 @@ from boa.code import (
     OPGETGLOBAL,
     OPSETGLOBAL,
     OPARRAY,
+    OPHASH,
+    OPINDEX,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -218,6 +221,35 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 2), #0006
             makeInstr(OPADD),
             makeInstr(OPARRAY, 2), #0009
+            makeInstr(OPPOP), #0012
+        ])
+
+        helper = CompileHelper(self, '[1, 1 + 2][0]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPCONSTANT, 1), #0003
+            makeInstr(OPCONSTANT, 2), #0006
+            makeInstr(OPADD),
+            makeInstr(OPARRAY, 2), #0009
+            makeInstr(OPCONSTANT, 3),
+            makeInstr(OPINDEX),
+            makeInstr(OPPOP), #0012
+        ])
+
+    def test_hashes(self):
+        helper = CompileHelper(self, '{1:2+3, 4:5*6}[0]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPCONSTANT, 1), #0000
+            makeInstr(OPCONSTANT, 2), #0000
+            makeInstr(OPADD), #0000
+            makeInstr(OPCONSTANT, 3), #0000
+            makeInstr(OPCONSTANT, 4), #0000
+            makeInstr(OPCONSTANT, 5), #0000
+            makeInstr(OPMUL), #0000
+            makeInstr(OPHASH, 4),
+            makeInstr(OPCONSTANT, 6),
+            makeInstr(OPINDEX),
             makeInstr(OPPOP), #0012
         ])
 

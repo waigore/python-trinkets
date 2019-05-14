@@ -21,12 +21,15 @@ from .code import (
     OPSETGLOBAL,
     OPGETGLOBAL,
     OPARRAY,
+    OPHASH,
+    OPINDEX,
     readUint16,
 )
 from .object import (
     newInteger,
     newString,
     newArray,
+    newHash,
     OBJECT_TYPES,
     TRUE,
     FALSE,
@@ -108,6 +111,16 @@ class VM(object):
                 arr = self.buildArray(self.sp-numElements, self.sp)
                 self.sp = self.sp - numElements
                 self.push(arr)
+            elif op == OPHASH:
+                numElements = readUint16(self.instr[ip+1:])
+                ip += 2
+                hash = self.buildHash(self.sp-numElements, self.sp)
+                self.sp = self.sp - numElements
+                self.push(hash)
+            elif op == OPINDEX:
+                index = self.pop()
+                left = self.pop()
+                self.executeIndexOperation(left, index)
             elif op == OPPOP:
                 self.pop()
             elif op == OPSETGLOBAL:
@@ -133,6 +146,36 @@ class VM(object):
     def buildArray(self, startIndex, endIndex):
         elements = self.stack[startIndex:endIndex]
         return newArray(elements)
+
+    def buildHash(self, startIndex, endIndex):
+        pairs = []
+        for i in range(startIndex, endIndex, 2):
+            key = self.stack[i]
+            val = self.stack[i+1]
+            pairs.append((key, val))
+        return newHash(pairs)
+
+    def executeIndexOperation(self, left, index):
+        if left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
+                index.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
+            return self.executeArrayIndexOperation(left, index)
+        elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_HASH:
+            return self.executeHashIndexOperation(left, index)
+        else:
+            raise BoaVMError("Unsupported for index operation: %s,%s" % (left.objectType, index.objectType))
+
+    def executeArrayIndexOperation(self, left, index):
+        try:
+            self.push(left[index])
+        except:
+            raise BoaVMError("Array index error: %d" % index.inspect())
+
+    def executeHashIndexOperation(self, left, index):
+        try:
+            self.push(left[index])
+        except:
+            raise BoaVMError("Hash index error: %d" % index.inspect())
+
 
     def executeComparison(self, op):
         right = self.pop()

@@ -118,12 +118,15 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'let monkey = "mon" + "key"; monkey == "monkey"')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
 
-    def test_arrays(self):
+    def test_arraysAndHashes(self):
         helper = VMHelper(self, '[1, 2, 3]')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_ARRAY, '[1, 2, 3]')
 
         helper = VMHelper(self, '[1+2, 3-4, 5*6]')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_ARRAY, '[3, -1, 30]')
 
-        helper = VMHelper(self, '["mon"+"key", "boa", true]')
-        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_ARRAY, '["monkey", "boa", true]')
+        helper = VMHelper(self, 'let b = ["mon"+"key", "boa", true]; (b[0] + b[1] == "monkeyboa") == b[2]')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'let a = {1+1:2*2, 3+3:4*4}; a[2]')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '4')
