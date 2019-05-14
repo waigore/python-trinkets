@@ -8,6 +8,7 @@ from .ast import (
     STATEMENT_TYPE_LET,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
+    EXPRESSION_TYPE_STR_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INFIX,
@@ -20,6 +21,7 @@ from .token import (
 )
 from .object import (
     newInteger,
+    newString,
 )
 from .code import (
     makeInstr,
@@ -101,6 +103,9 @@ class Compiler(object):
             if exprType == EXPRESSION_TYPE_INT_LIT:
                 intObj = newInteger(node.value)
                 self.emit(OPCONSTANT, self.addConstant(intObj))
+            elif exprType == EXPRESSION_TYPE_STR_LIT:
+                strObj = newString(node.value)
+                self.emit(OPCONSTANT, self.addConstant(strObj))
             elif exprType == EXPRESSION_TYPE_BOOLEAN:
                 if node.value:
                     self.emit(OPTRUE)

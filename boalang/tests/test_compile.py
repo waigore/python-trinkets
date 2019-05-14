@@ -56,6 +56,20 @@ class TestCompilation(unittest.TestCase):
         helper.checkConstantsExpected([3, 5])
 
     def test_simpleExpressions(self):
+        helper = CompileHelper(self, '"abcd"')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPPOP),
+        ])
+
+        helper = CompileHelper(self, '"abcd" + "defg"')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPADD),
+            makeInstr(OPPOP),
+        ])
+
         helper = CompileHelper(self, '3 + 5; 2; true; false')
         helper.checkInstructionsExpected([
             makeInstr(OPCONSTANT, 0),

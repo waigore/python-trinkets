@@ -24,6 +24,7 @@ from .code import (
 )
 from .object import (
     newInteger,
+    newString,
     OBJECT_TYPES,
     TRUE,
     FALSE,
@@ -129,9 +130,9 @@ class VM(object):
                 right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
             return self.executeIntegerComparison(op, left, right)
         if op == OPEQ:
-            return self.push(self.nativeBooleanToBooleanObject(right == left))
+            return self.push(self.nativeBooleanToBooleanObject(right.value == left.value))
         elif op == OPNEQ:
-            return self.push(self.nativeBooleanToBooleanObject(right != left))
+            return self.push(self.nativeBooleanToBooleanObject(right.value != left.value))
         else:
             raise BoaVMError("Unsupported for boolean comparison: %d" % (op))
 
@@ -146,7 +147,7 @@ class VM(object):
         elif op == OPGT:
             return self.push(self.nativeBooleanToBooleanObject(leftValue > rightValue))
         elif op == OPGTEQ:
-            return self.push(self.nativeBooleanToBooleanObject(leftValue > rightValue))
+            return self.push(self.nativeBooleanToBooleanObject(leftValue >= rightValue))
         else:
             raise BoaVMError("Unsupported for integer comparison: %d" % (op))
 
@@ -180,6 +181,9 @@ class VM(object):
         if left.objectType == OBJECT_TYPES.OBJECT_TYPE_INT and \
                 right.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
             return self.executeBinaryIntegerOperation(op, left, right)
+        elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING and \
+                right.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING:
+            return self.executeBinaryStringOperation(op, left, right)
         raise BoaVMError("Unsupported types for binary operation: %s %s" % (left.objectType, right.objectType))
 
     def executeBinaryIntegerOperation(self, op, left, right):
@@ -196,3 +200,12 @@ class VM(object):
         else:
             raise BoaVMError("Unknown integer operator: %d" % op)
         self.push(newInteger(result))
+
+    def executeBinaryStringOperation(self, op, left, right):
+        leftValue = left.value
+        rightValue = right.value
+        if op == OPADD:
+            result = leftValue + rightValue
+        else:
+            raise BoaVMError("Unknown integer operator: %d" % op)
+        self.push(newString(result))
