@@ -107,3 +107,7 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, '!(if (false) { 5 })')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+    def test_assignments(self):
+        helper = VMHelper(self, 'let a = 1; let b = a; a+b')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '2')

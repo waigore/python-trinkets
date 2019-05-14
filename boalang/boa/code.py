@@ -18,6 +18,8 @@ OPNOT = b'\x0D'
 OPJUMPNOTTRUE = b'\x0E'
 OPJUMP = b'\x0F'
 OPNULL = b'\x10'
+OPGETGLOBAL = b'\x11'
+OPSETGLOBAL = b'\x12'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -47,6 +49,8 @@ DEFINITIONS = DictLikeStruct({
     OPJUMPNOTTRUE: Definition("OpJumpNotTrue", [2]),
     OPJUMP: Definition("OpJump", [2]),
     OPNULL: Definition("OpNull", []),
+    OPGETGLOBAL: Definition("OpGetGlobal", [2]),
+    OPSETGLOBAL: Definition("OpSetGlobal", [2]),
 })
 
 def lookupOpcode(b):

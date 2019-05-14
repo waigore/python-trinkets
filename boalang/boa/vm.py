@@ -18,6 +18,8 @@ from .code import (
     OPJUMP,
     OPJUMPNOTTRUE,
     OPNULL,
+    OPSETGLOBAL,
+    OPGETGLOBAL,
     readUint16,
 )
 from .object import (
@@ -32,6 +34,7 @@ from .evaluator import (
 )
 
 STACK_SIZE = 2048
+GLOBALS_SIZE = 65536
 
 class BoaVMError(Exception): pass
 
@@ -40,7 +43,14 @@ class VM(object):
         self.constants = bytecode.constants
         self.instr = bytecode.instr
         self.stack = [None]*STACK_SIZE #stack of BoaObjects
+        self.globals = [None]*GLOBALS_SIZE
         self.sp = 0
+
+    @staticmethod
+    def newWithGlobalsStore(bytecode, globals):
+        vm = VM(bytecode)
+        vm.globals = globals
+        return vm
 
     def stackTop(self):
         if self.sp == 0:
@@ -91,6 +101,14 @@ class VM(object):
                 self.push(NULL)
             elif op == OPPOP:
                 self.pop()
+            elif op == OPSETGLOBAL:
+                globalIndex = readUint16(self.instr[ip+1:])
+                ip += 2
+                self.globals[globalIndex] = self.pop()
+            elif op == OPGETGLOBAL:
+                globalIndex = readUint16(self.instr[ip+1:])
+                ip += 2
+                self.push(self.globals[globalIndex])
             elif op == OPJUMP:
                 pos = readUint16(self.instr[ip+1:])
                 ip = pos - 1

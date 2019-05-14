@@ -5,9 +5,11 @@ from .ast import (
     NODE_TYPE_STATEMENT,
     NODE_TYPE_EXPRESSION,
     STATEMENT_TYPE_EXPRESSION,
+    STATEMENT_TYPE_LET,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_BOOLEAN,
+    EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_IF,
@@ -38,6 +40,12 @@ from .code import (
     OPJUMP,
     OPJUMPNOTTRUE,
     OPNULL,
+    OPSETGLOBAL,
+    OPGETGLOBAL,
+)
+from .symbol import (
+    SymbolTable,
+    SymbolNotFoundError,
 )
 
 class BoaCompilerError(Exception): pass
@@ -62,6 +70,14 @@ class Compiler(object):
         self.constants = [] #BoaObjects
         self.lastInstruction = None
         self.previousInstruction = None
+        self.symbolTable = SymbolTable()
+
+    @staticmethod
+    def withNewState(symbolTable, constants):
+        compiler = Compiler()
+        compiler.symbolTable = symbolTable
+        compiler.constants = constants
+        return compiler
 
     def compile(self, node):
         nodeType = node.nodeType
@@ -76,6 +92,10 @@ class Compiler(object):
             elif stmtType == STATEMENT_TYPE_BLOCK:
                 for statement in node.statements:
                     self.compile(statement)
+            elif stmtType == STATEMENT_TYPE_LET:
+                self.compile(node.value)
+                symbol = self.symbolTable.define(node.identifier.value)
+                self.emit(OPSETGLOBAL, symbol.index)
         elif nodeType == NODE_TYPE_EXPRESSION:
             exprType = node.expressionType
             if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -88,6 +108,12 @@ class Compiler(object):
                     self.emit(OPFALSE)
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
+            elif exprType == EXPRESSION_TYPE_IDENT:
+                try:
+                    symbol = self.symbolTable.resolve(node.value)
+                except SymbolNotFoundError as e:
+                    raise BoaCompilerError("Identifier not defined: %s" % node.value)
+                self.emit(OPGETGLOBAL, symbol.index)
             elif exprType == EXPRESSION_TYPE_IF:
                 jumpPositions = []
                 for i, conditionalBlock in enumerate(node.conditionalBlocks):
@@ -120,27 +146,6 @@ class Compiler(object):
                 afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
                 for jumpPos in jumpPositions:
                     self.changeOperand(jumpPos, afterAlternativePos)
-
-                '''
-                condition, consequence = node.conditionalBlocks[0]
-                self.compile(condition)
-                jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
-                self.compile(consequence)
-                if self.lastInstructionIs(OPPOP):
-                    self.removeLast()
-                if not node.alternative:
-                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
-                    self.changeOperand(jumpNotTruePos, afterConsequencePos)
-                else:
-                    jumpPos = self.emit(OPJUMP, 9999)
-                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
-                    self.changeOperand(jumpNotTruePos, afterConsequencePos)
-                    self.compile(node.alternative)
-                    if self.lastInstructionIs(OPPOP):
-                        self.removeLast()
-                    afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
-                    self.changeOperand(jumpPos, afterAlternativePos)
-                '''
             elif exprType == EXPRESSION_TYPE_PREFIX:
                 self.compile(node.right)
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:

@@ -15,6 +15,8 @@ from boa.code import (
     OPJUMP,
     OPJUMPNOTTRUE,
     OPNULL,
+    OPGETGLOBAL,
+    OPSETGLOBAL,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -157,6 +159,25 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPJUMP, 21), #0017
             makeInstr(OPNULL), #0020
             makeInstr(OPPOP), #0021
+        ])
+
+    def test_letsAndIdents(self):
+        helper = CompileHelper(self, 'let a = 1; let b = 2;')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPSETGLOBAL, 0), #0003
+            makeInstr(OPCONSTANT, 1), #0006
+            makeInstr(OPSETGLOBAL, 1), #0009
+        ])
+
+        helper = CompileHelper(self, 'let a = 1; a + 1')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPSETGLOBAL, 0), #0003
+            makeInstr(OPGETGLOBAL, 0), #0006
+            makeInstr(OPCONSTANT, 1), #0009
+            makeInstr(OPADD), #0012
+            makeInstr(OPPOP), #0013
         ])
 
 if __name__ == '__main__':
