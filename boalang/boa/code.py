@@ -1,5 +1,6 @@
 from .util import DictLikeStruct
 
+OPNOP = b'\xFF'
 OPCONSTANT = b'\x00'
 OPADD = b'\x01'
 OPPOP = b'\x02'
@@ -16,6 +17,7 @@ OPMINUS = b'\x0C'
 OPNOT = b'\x0D'
 OPJUMPNOTTRUE = b'\x0E'
 OPJUMP = b'\x0F'
+OPNULL = b'\x10'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -27,6 +29,7 @@ class Definition(object):
         self.operandWidths = operandWidths
 
 DEFINITIONS = DictLikeStruct({
+    OPNOP: Definition("OpNop", []),
     OPCONSTANT: Definition("OpConstant", [2]),
     OPADD: Definition("OpAdd", []),
     OPPOP: Definition("OpPop", []),
@@ -43,6 +46,7 @@ DEFINITIONS = DictLikeStruct({
     OPNOT: Definition("OpNot", []),
     OPJUMPNOTTRUE: Definition("OpJumpNotTrue", [2]),
     OPJUMP: Definition("OpJump", [2]),
+    OPNULL: Definition("OpNull", []),
 })
 
 def lookupOpcode(b):

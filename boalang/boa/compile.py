@@ -6,6 +6,7 @@ from .ast import (
     NODE_TYPE_EXPRESSION,
     STATEMENT_TYPE_EXPRESSION,
     EXPRESSION_TYPE_INT_LIT,
+    EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
@@ -36,6 +37,7 @@ from .code import (
     OPNOT,
     OPJUMP,
     OPJUMPNOTTRUE,
+    OPNULL,
 )
 
 class BoaCompilerError(Exception): pass
@@ -84,7 +86,42 @@ class Compiler(object):
                     self.emit(OPTRUE)
                 else:
                     self.emit(OPFALSE)
+            elif exprType == EXPRESSION_TYPE_NULL_LIT:
+                self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_IF:
+                jumpPositions = []
+                for i, conditionalBlock in enumerate(node.conditionalBlocks):
+                    condition, consequence = conditionalBlock
+                    self.compile(condition)
+                    jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
+
+                    posPreCompilation = len(self.instructions)-1
+                    self.compile(consequence)
+                    if self.lastInstructionIs(OPPOP):
+                        self.removeLast()
+                    if len(self.instructions)-1 == posPreCompilation:
+                        self.emit(OPNULL)
+
+                    jumpPos = self.emit(OPJUMP, 9999)
+                    jumpPositions.append(jumpPos)
+                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
+                    self.changeOperand(jumpNotTruePos, afterConsequencePos)
+
+                if not node.alternative:
+                    self.emit(OPNULL)
+                else:
+                    posPreCompilation = len(self.instructions)-1
+                    self.compile(node.alternative)
+                    if self.lastInstructionIs(OPPOP):
+                        self.removeLast()
+                    if len(self.instructions)-1 == posPreCompilation:
+                        self.emit(OPNULL)
+
+                afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
+                for jumpPos in jumpPositions:
+                    self.changeOperand(jumpPos, afterAlternativePos)
+
+                '''
                 condition, consequence = node.conditionalBlocks[0]
                 self.compile(condition)
                 jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
@@ -103,6 +140,7 @@ class Compiler(object):
                         self.removeLast()
                     afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
                     self.changeOperand(jumpPos, afterAlternativePos)
+                '''
             elif exprType == EXPRESSION_TYPE_PREFIX:
                 self.compile(node.right)
                 if node.operator == TOKEN_TYPES.TOKEN_TYPE_MINUS.value:
