@@ -23,6 +23,8 @@ from .code import (
     OPARRAY,
     OPHASH,
     OPINDEX,
+    OPCALL,
+    OPRETURNVALUE,
     readUint16,
 )
 from .object import (
@@ -30,6 +32,7 @@ from .object import (
     newString,
     newArray,
     newHash,
+    newCompiledFunction,
     OBJECT_TYPES,
     TRUE,
     FALSE,
@@ -41,22 +44,60 @@ from .evaluator import (
 
 STACK_SIZE = 2048
 GLOBALS_SIZE = 65536
+MAX_FRAMES = 1024
 
 class BoaVMError(Exception): pass
+
+class Frame(object):
+    def __init__(self, compiledFunction):
+        self.compiledFunction = compiledFunction
+        self.ip = 0
+
+    @property
+    def instr(self):
+        return self.compiledFunction.value
 
 class VM(object):
     def __init__(self, bytecode):
         self.constants = bytecode.constants
-        self.instr = bytecode.instr
         self.stack = [None]*STACK_SIZE #stack of BoaObjects
         self.globals = [None]*GLOBALS_SIZE
         self.sp = 0
+        self.frames = [None]*MAX_FRAMES #stack of Frames
+        self.frameIndex = 0
+
+        mainFrame = Frame(newCompiledFunction(bytecode.instr))
+        self.pushFrame(mainFrame)
+
 
     @staticmethod
     def newWithGlobalsStore(bytecode, globals):
         vm = VM(bytecode)
         vm.globals = globals
         return vm
+
+    def currentFrame(self):
+        return self.frames[self.frameIndex - 1]
+
+    def currentFrameIp(self):
+        return self.currentFrame().ip
+
+    def currentInstr(self):
+        return self.currentFrame().instr
+
+    def incrCurrentFrameIp(self, incr):
+        self.currentFrame().ip = self.currentFrame().ip + incr
+
+    def setCurrentFrameIp(self, val):
+        self.currentFrame().ip = val
+
+    def pushFrame(self, frame):
+        self.frames[self.frameIndex] = frame
+        self.frameIndex += 1
+
+    def popFrame(self):
+        self.frameIndex -= 1
+        return self.frames[self.frameIndex]
 
     def stackTop(self):
         if self.sp == 0:
@@ -84,12 +125,16 @@ class VM(object):
         return obj
 
     def run(self):
-        ip = 0
-        while ip < len(self.instr):
-            op = self.instr[ip:ip+1]
+        #ip = 0
+        while self.currentFrameIp() < len(self.currentInstr()):
+            incrFrameIp = True
+            op = self.currentInstr()[self.currentFrameIp():self.currentFrameIp()+1]
             if op == OPCONSTANT:
-                constIndex = readUint16(self.instr[ip+1:])
-                ip += 2
+                constIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
+                #print(constIndex, self.constants, len(self.constants))
+                #print(instr[self.currentFrameIp():])
+                #print(self.constants)
                 self.push(self.constants[constIndex])
             elif op in (OPEQ, OPNEQ, OPGT, OPGTEQ):
                 self.executeComparison(op)
@@ -106,14 +151,14 @@ class VM(object):
             elif op == OPNULL:
                 self.push(NULL)
             elif op == OPARRAY:
-                numElements = readUint16(self.instr[ip+1:])
-                ip += 2
+                numElements = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
                 arr = self.buildArray(self.sp-numElements, self.sp)
                 self.sp = self.sp - numElements
                 self.push(arr)
             elif op == OPHASH:
-                numElements = readUint16(self.instr[ip+1:])
-                ip += 2
+                numElements = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
                 hash = self.buildHash(self.sp-numElements, self.sp)
                 self.sp = self.sp - numElements
                 self.push(hash)
@@ -124,24 +169,35 @@ class VM(object):
             elif op == OPPOP:
                 self.pop()
             elif op == OPSETGLOBAL:
-                globalIndex = readUint16(self.instr[ip+1:])
-                ip += 2
+                globalIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
                 self.globals[globalIndex] = self.pop()
             elif op == OPGETGLOBAL:
-                globalIndex = readUint16(self.instr[ip+1:])
-                ip += 2
+                globalIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
                 self.push(self.globals[globalIndex])
             elif op == OPJUMP:
-                pos = readUint16(self.instr[ip+1:])
-                ip = pos - 1
+                pos = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.setCurrentFrameIp(pos - 1)
             elif op == OPJUMPNOTTRUE:
-                pos = readUint16(self.instr[ip+1:])
-                ip += 2
+                pos = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
                 condition = self.pop()
                 if not isTruthy(condition):
-                    ip = pos - 1
+                    self.setCurrentFrameIp(pos - 1)
+            elif op == OPCALL:
+                fn = self.stack[self.sp-1]
+                frame = Frame(fn)
+                self.pushFrame(frame)
+                incrFrameIp = False
+            elif op == OPRETURNVALUE:
+                returnValue = self.pop()
+                self.popFrame()
+                self.pop()
+                self.push(returnValue)
 
-            ip += 1
+            if incrFrameIp:
+                self.incrCurrentFrameIp(1)
 
     def buildArray(self, startIndex, endIndex):
         elements = self.stack[startIndex:endIndex]

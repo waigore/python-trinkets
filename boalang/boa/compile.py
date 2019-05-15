@@ -7,6 +7,7 @@ from .ast import (
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_LET,
     STATEMENT_TYPE_RETURN,
+    STATEMENT_TYPE_BLOCK,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
@@ -19,7 +20,7 @@ from .ast import (
     EXPRESSION_TYPE_INDEX,
     EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_IF,
-    STATEMENT_TYPE_BLOCK,
+    EXPRESSION_TYPE_CALL,
 )
 from .token import (
     TOKEN_TYPES,
@@ -53,6 +54,7 @@ from .code import (
     OPARRAY,
     OPHASH,
     OPINDEX,
+    OPCALL,
     OPRETURNVALUE,
 )
 from .symbol import (
@@ -158,7 +160,7 @@ class Compiler(object):
                     lastPos = self.currentScope().lastInstruction.position
                     self.replaceInstruction(lastPos, makeInstr(OPRETURNVALUE))
                     self.currentScope().lastInstruction.opcode = OPRETURNVALUE
-                    
+
                 if not self.lastInstructionIs(OPRETURNVALUE):
                     self.emit(OPNULL)
                     self.emit(OPRETURNVALUE)
@@ -167,6 +169,9 @@ class Compiler(object):
                 compiledInstructions = b''.join(instructions)
                 compiledFn = newCompiledFunction(compiledInstructions)
                 self.emit(OPCONSTANT, self.addConstant(compiledFn))
+            elif exprType == EXPRESSION_TYPE_CALL:
+                self.compile(node.function)
+                self.emit(OPCALL)
             elif exprType == EXPRESSION_TYPE_IDENT:
                 try:
                     symbol = self.symbolTable.resolve(node.value)
