@@ -140,3 +140,12 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, 'fn() { 1+2*3-4; }()')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')
+
+        helper = VMHelper(self, 'let a = fn() {1}; let b = fn() {a()+1}; let c = fn() {b()+1}; c()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')
+
+        helper = VMHelper(self, 'let a = fn() { return 1; 0} a()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '1')
+
+        helper = VMHelper(self, 'let a = fn(){1}; let aa = fn(){a}; aa()()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '1')
