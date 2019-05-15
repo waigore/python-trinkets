@@ -9,6 +9,7 @@ OBJECT_TYPE_HASH = 'OBJECT_TYPE_HASH'
 OBJECT_TYPE_HASH_PAIR = 'OBJECT_TYPE_HASH_PAIR'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
+OBJECT_TYPE_COMPILED_FUNCTION = 'OBJECT_TYPE_COMPILED_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
 OBJECT_TYPE_CONTINUE = 'OBJECT_TYPE_CONTINUE'
@@ -42,6 +43,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_CONTINUE: BoaObjectType(OBJECT_TYPE_CONTINUE, "continue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
+    OBJECT_TYPE_COMPILED_FUNCTION: BoaObjectType(OBJECT_TYPE_COMPILED_FUNCTION, "compiledFunction"),
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
 })
 
@@ -73,6 +75,9 @@ def newError(msg):
 
 def newFunction(params, body, env):
     return newObject(OBJECT_TYPE_FUNCTION, params, body, env)
+
+def newCompiledFunction(instr):
+    return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr)
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
@@ -196,6 +201,18 @@ class BoaFunction(BoaObject):
 
     def inspect(self):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
+
+class BoaCompiledFunction(BoaObject):
+    def __init__(self, instr):
+        super(BoaCompiledFunction, self).__init__(OBJECT_TYPES.OBJECT_TYPE_COMPILED_FUNCTION)
+        self.instr = instr
+        self.value = instr
+
+    def __repr__(self):
+        return '<compiledFunction (len=%d)>' % (len(self.instr))
+
+    def inspect(self):
+        return '<compiledFunction (len=%d)>' % (len(self.instr))
 
 class BoaBuiltinFunction(BoaObject):
     def __init__(self, name, func):
@@ -330,4 +347,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_STRING: BoaString,
     OBJECT_TYPE_ARRAY: BoaArray,
     OBJECT_TYPE_HASH: BoaHash,
+    OBJECT_TYPE_COMPILED_FUNCTION: BoaCompiledFunction,
 })

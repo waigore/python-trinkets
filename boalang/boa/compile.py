@@ -6,6 +6,7 @@ from .ast import (
     NODE_TYPE_EXPRESSION,
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_LET,
+    STATEMENT_TYPE_RETURN,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
@@ -16,6 +17,7 @@ from .ast import (
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INDEX,
+    EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_IF,
     STATEMENT_TYPE_BLOCK,
 )
@@ -25,6 +27,7 @@ from .token import (
 from .object import (
     newInteger,
     newString,
+    newCompiledFunction,
 )
 from .code import (
     makeInstr,
@@ -50,6 +53,7 @@ from .code import (
     OPARRAY,
     OPHASH,
     OPINDEX,
+    OPRETURNVALUE,
 )
 from .symbol import (
     SymbolTable,
@@ -72,13 +76,18 @@ class EmittedInstruction(object):
         self.opcode = opcode
         self.position = position
 
+class CompilationScope(object):
+    def __init__(self, instructions, lastInstruction, previousInstruction):
+        self.instructions = instructions #bytecode instructions
+        self.lastInstruction = lastInstruction #EmittedInstruction
+        self.previousInstruction = previousInstruction #EmittedInstruction
+
 class Compiler(object):
     def __init__(self):
-        self.instructions = [] #bytecode instructions
         self.constants = [] #BoaObjects
-        self.lastInstruction = None
-        self.previousInstruction = None
         self.symbolTable = SymbolTable()
+        self.scopes = [CompilationScope([], None, None)] #CompilationScopes
+        self.scopeIndex = 0
 
     @staticmethod
     def withNewState(symbolTable, constants):
@@ -104,6 +113,9 @@ class Compiler(object):
                 self.compile(node.value)
                 symbol = self.symbolTable.define(node.identifier.value)
                 self.emit(OPSETGLOBAL, symbol.index)
+            elif stmtType == STATEMENT_TYPE_RETURN:
+                self.compile(node.value)
+                self.emit(OPRETURNVALUE)
         elif nodeType == NODE_TYPE_EXPRESSION:
             exprType = node.expressionType
             if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -138,6 +150,23 @@ class Compiler(object):
                 self.emit(OPHASH, len(node.elements)*2)
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
+            elif exprType == EXPRESSION_TYPE_FUNC_LIT:
+                self.enterScope()
+                self.compile(node.body)
+
+                if self.lastInstructionIs(OPPOP):
+                    lastPos = self.currentScope().lastInstruction.position
+                    self.replaceInstruction(lastPos, makeInstr(OPRETURNVALUE))
+                    self.currentScope().lastInstruction.opcode = OPRETURNVALUE
+                    
+                if not self.lastInstructionIs(OPRETURNVALUE):
+                    self.emit(OPNULL)
+                    self.emit(OPRETURNVALUE)
+
+                instructions = self.leaveScope()
+                compiledInstructions = b''.join(instructions)
+                compiledFn = newCompiledFunction(compiledInstructions)
+                self.emit(OPCONSTANT, self.addConstant(compiledFn))
             elif exprType == EXPRESSION_TYPE_IDENT:
                 try:
                     symbol = self.symbolTable.resolve(node.value)
@@ -155,29 +184,29 @@ class Compiler(object):
                     self.compile(condition)
                     jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
 
-                    posPreCompilation = len(self.instructions)-1
+                    posPreCompilation = len(self.currentInstructions())-1
                     self.compile(consequence)
                     if self.lastInstructionIs(OPPOP):
                         self.removeLast()
-                    if len(self.instructions)-1 == posPreCompilation:
+                    if len(self.currentInstructions())-1 == posPreCompilation:
                         self.emit(OPNULL)
 
                     jumpPos = self.emit(OPJUMP, 9999)
                     jumpPositions.append(jumpPos)
-                    afterConsequencePos = self.getInstrBytecodePos(len(self.instructions))
+                    afterConsequencePos = self.getInstrBytecodePos(len(self.currentInstructions()))
                     self.changeOperand(jumpNotTruePos, afterConsequencePos)
 
                 if not node.alternative:
                     self.emit(OPNULL)
                 else:
-                    posPreCompilation = len(self.instructions)-1
+                    posPreCompilation = len(self.currentInstructions())-1
                     self.compile(node.alternative)
                     if self.lastInstructionIs(OPPOP):
                         self.removeLast()
-                    if len(self.instructions)-1 == posPreCompilation:
+                    if len(self.currentInstructions())-1 == posPreCompilation:
                         self.emit(OPNULL)
 
-                afterAlternativePos = self.getInstrBytecodePos(len(self.instructions))
+                afterAlternativePos = self.getInstrBytecodePos(len(self.currentInstructions()))
                 for jumpPos in jumpPositions:
                     self.changeOperand(jumpPos, afterAlternativePos)
             elif exprType == EXPRESSION_TYPE_PREFIX:
@@ -220,6 +249,17 @@ class Compiler(object):
                 else:
                     raise BoaCompilerError("Unknown infix operator: %s" % node.operator)
 
+    def enterScope(self):
+        newScope = CompilationScope([], None, None)
+        self.scopes.append(newScope)
+        self.scopeIndex += 1
+
+    def leaveScope(self):
+        instructions = self.currentInstructions()
+        currScope = self.scopes.pop()
+        self.scopeIndex -= 1
+        return instructions
+
     def addConstant(self, c):
         self.constants.append(c)
         return len(self.constants) - 1
@@ -230,36 +270,49 @@ class Compiler(object):
         self.setLastInstruction(opcode, pos)
         return pos
 
+    def currentInstructions(self):
+        return self.scopes[self.scopeIndex].instructions
+
+    def currentScope(self):
+        return self.scopes[self.scopeIndex]
+
     def getInstrBytecodePos(self, pos):
-        instructionsUpTo = self.instructions[:pos]
+        instructionsUpTo = self.currentInstructions()[:pos]
         instrBytes = b''.join(instructionsUpTo)
         return len(instrBytes)
 
     def setLastInstruction(self, opcode, pos):
-        prev = self.lastInstruction
+        prev = self.currentScope().lastInstruction
         last = EmittedInstruction(opcode, pos)
-        self.previousInstruction = prev
-        self.lastInstruction = last
+        self.currentScope().previousInstruction = prev
+        self.currentScope().lastInstruction = last
 
     def replaceInstruction(self, pos, newInstruction):
-        self.instructions[pos] = newInstruction
+        self.currentInstructions()[pos] = newInstruction
 
     def changeOperand(self, opPos, operand):
-        opcode = self.instructions[opPos][0:1]
+        opcode = self.currentInstructions()[opPos][0:1]
         newInstr = makeInstr(opcode, operand)
         self.replaceInstruction(opPos, newInstr)
 
     def lastInstructionIs(self, opcode):
-        return self.lastInstruction.opcode == opcode
+        if len(self.currentInstructions()) == 0:
+            return False
+        return self.currentScope().lastInstruction.opcode == opcode
 
     def removeLast(self):
-        self.instructions = self.instructions[:self.lastInstruction.position]
-        self.lastInstruction = self.previousInstruction
+        last = self.currentScope().lastInstruction
+        prev = self.currentScope().previousInstruction
+        old = self.currentInstructions()
+        new = old[:last.position]
+
+        self.currentScope().instructions = new
+        self.currentScope().lastInstruction = prev
 
     def addInstruction(self, instr):
-        posNewInstruction = len(self.instructions)
-        self.instructions.append(instr)
+        posNewInstruction = len(self.currentInstructions())
+        self.currentInstructions().append(instr)
         return posNewInstruction
 
     def bytecode(self):
-        return Bytecode(list(self.instructions), list(self.constants))
+        return Bytecode(list(self.currentInstructions()), list(self.constants))

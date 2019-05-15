@@ -21,6 +21,7 @@ from boa.code import (
     OPARRAY,
     OPHASH,
     OPINDEX,
+    OPRETURNVALUE,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -251,6 +252,39 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 6),
             makeInstr(OPINDEX),
             makeInstr(OPPOP), #0012
+        ])
+
+    def test_functions(self):
+        helper = CompileHelper(self, 'fn() { return 5 + 10 }')
+        helper.checkConstantsExpected([
+            5,
+            10,
+            b''.join([
+                makeInstr(OPCONSTANT, 0), #0000
+                makeInstr(OPCONSTANT, 1), #0000
+                makeInstr(OPADD), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
+        ])
+
+        helper = CompileHelper(self, 'fn() { 5 + 10 }')
+        helper.checkConstantsExpected([
+            5,
+            10,
+            b''.join([
+                makeInstr(OPCONSTANT, 0), #0000
+                makeInstr(OPCONSTANT, 1), #0000
+                makeInstr(OPADD), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
+        ])
+
+        helper = CompileHelper(self, 'fn() {  }')
+        helper.checkConstantsExpected([
+            b''.join([
+                makeInstr(OPNULL), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
         ])
 
 if __name__ == '__main__':
