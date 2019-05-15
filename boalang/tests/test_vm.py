@@ -149,3 +149,15 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, 'let a = fn(){1}; let aa = fn(){a}; aa()()')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '1')
+
+        helper = VMHelper(self, 'let g = 50; let m = fn() {let n = 1; g-n}; let m2 = fn() { let n = 2; g-n}; m()+m2()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '97')
+
+        helper = VMHelper(self, 'let sum = fn(a,b){ let c = a + b; c;} sum(1, 2) + sum(3, 4)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+
+        helper = VMHelper(self, 'let sum = fn(a,b){ let c = a + b; c;} let outer = fn() { sum(1, 2) + sum(3, 4) }; outer()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+
+        helper = VMHelper(self, 'let g = 10; let s = fn(a, b){ let c = a+b; c + g;}; let outer = fn() { s(1, 2)+ s(3, 4)+g;}; outer()+g')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '50')

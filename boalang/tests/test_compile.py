@@ -22,6 +22,8 @@ from boa.code import (
     OPHASH,
     OPINDEX,
     OPRETURNVALUE,
+    OPSETLOCAL,
+    OPGETLOCAL,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -283,6 +285,42 @@ class TestCompilation(unittest.TestCase):
         helper.checkConstantsExpected([
             b''.join([
                 makeInstr(OPNULL), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
+        ])
+
+        helper = CompileHelper(self, 'let num = 55; fn() { num }')
+        helper.checkConstantsExpected([
+            55,
+            b''.join([
+                makeInstr(OPGETGLOBAL, 0), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
+        ])
+
+        helper = CompileHelper(self, 'fn() { let num = 55; num }')
+        helper.checkConstantsExpected([
+            55,
+            b''.join([
+                makeInstr(OPCONSTANT, 0),
+                makeInstr(OPSETLOCAL, 0), #0000
+                makeInstr(OPGETLOCAL, 0), #0000
+                makeInstr(OPRETURNVALUE), #0000
+            ])
+        ])
+
+        helper = CompileHelper(self, 'fn() { let a = 55; let b = 77; a + b }')
+        helper.checkConstantsExpected([
+            55,
+            77,
+            b''.join([
+                makeInstr(OPCONSTANT, 0),
+                makeInstr(OPSETLOCAL, 0), #0000
+                makeInstr(OPCONSTANT, 1),
+                makeInstr(OPSETLOCAL, 1), #0000
+                makeInstr(OPGETLOCAL, 0), #0000
+                makeInstr(OPGETLOCAL, 1), #0000
+                makeInstr(OPADD), #0000
                 makeInstr(OPRETURNVALUE), #0000
             ])
         ])

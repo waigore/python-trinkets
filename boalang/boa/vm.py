@@ -25,7 +25,10 @@ from .code import (
     OPINDEX,
     OPCALL,
     OPRETURNVALUE,
+    OPSETLOCAL,
+    OPGETLOCAL,
     readUint16,
+    readUint8,
 )
 from .object import (
     newInteger,
@@ -49,9 +52,10 @@ MAX_FRAMES = 1024
 class BoaVMError(Exception): pass
 
 class Frame(object):
-    def __init__(self, compiledFunction):
+    def __init__(self, compiledFunction, basePointer):
         self.compiledFunction = compiledFunction
         self.ip = 0
+        self.basePointer = basePointer
 
     @property
     def instr(self):
@@ -66,7 +70,7 @@ class VM(object):
         self.frames = [None]*MAX_FRAMES #stack of Frames
         self.frameIndex = 0
 
-        mainFrame = Frame(newCompiledFunction(bytecode.instr))
+        mainFrame = Frame(newCompiledFunction(bytecode.instr), 0)
         self.pushFrame(mainFrame)
 
 
@@ -186,18 +190,37 @@ class VM(object):
                 if not isTruthy(condition):
                     self.setCurrentFrameIp(pos - 1)
             elif op == OPCALL:
-                fn = self.stack[self.sp-1]
-                frame = Frame(fn)
-                self.pushFrame(frame)
+                numArgs = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                self.callFunction(numArgs)
                 incrFrameIp = False
+            elif op == OPSETLOCAL:
+                localIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                frame = self.currentFrame()
+                self.stack[frame.basePointer+localIndex] = self.pop()
+            elif op == OPGETLOCAL:
+                localIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                frame = self.currentFrame()
+                self.push(self.stack[frame.basePointer+localIndex])
             elif op == OPRETURNVALUE:
                 returnValue = self.pop()
-                self.popFrame()
-                self.pop()
+                frame = self.popFrame()
+                self.sp = frame.basePointer - 1
+                #self.pop()
                 self.push(returnValue)
 
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
+
+    def callFunction(self, numArgs):
+        fn = self.stack[self.sp-1-numArgs]
+        if numArgs != fn.numParameters:
+            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
+        frame = Frame(fn, self.sp-numArgs)
+        self.pushFrame(frame)
+        self.sp = frame.basePointer + fn.numLocals
 
     def buildArray(self, startIndex, endIndex):
         elements = self.stack[startIndex:endIndex]

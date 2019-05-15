@@ -25,7 +25,9 @@ OPHASH = b'\x14'
 OPINDEX = b'\x15'
 OPCALL = b'\x16'
 OPRETURNVALUE = b'\x17'
-OPRETURN = b'\x18'
+OPRETURN = b'\x18' #reserved
+OPGETLOCAL = b'\x19'
+OPSETLOCAL = b'\x1A'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -60,9 +62,11 @@ DEFINITIONS = DictLikeStruct({
     OPARRAY: Definition("OpArray", [2]),
     OPHASH: Definition("OpHash", [2]),
     OPINDEX: Definition("OpIndex", []),
-    OPCALL: Definition("OpCall", []),
+    OPCALL: Definition("OpCall", [1]),
     OPRETURNVALUE: Definition("OpReturnValue", []),
     OPRETURN: Definition("OpReturn", []),
+    OPGETLOCAL: Definition("OpGetLocal", [1]),
+    OPSETLOCAL: Definition("OpSetLocal", [1]),
 })
 
 def lookupOpcode(b):
@@ -103,13 +107,19 @@ def formatInstr(definition, operands):
     return "%s%s%s" % (definition.name, ' ' if operands else '', ''.join(['%d' % operand for operand in operands]))
 
 def readUint16(instr):
-    return int.from_bytes(instr[0:2], byteorder='big')
+    return readUint(instr, 2)
+
+def readUint8(instr):
+    return readUint(instr, 1)
+
+def readUint(instr, width):
+    return int.from_bytes(instr[0:width], byteorder='big')
 
 def readOperands(definition, instr):
     operands = []
     offset = 0
     for i, w in enumerate(definition.operandWidths):
-        val = readUint16(instr[offset:offset+w])
+        val = readUint(instr[offset:offset+w], w)
         offset += w
         operands.append(val)
     return operands, offset

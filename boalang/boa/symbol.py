@@ -1,5 +1,6 @@
 
 GLOBAL_SCOPE = "GLOBAL_SCOPE"
+LOCAL_SCOPE = "LOCAL_SCOPE"
 
 class SymbolNotFoundError(Exception): pass
 
@@ -10,12 +11,17 @@ class Symbol(object):
         self.index = index
 
 class SymbolTable(object):
-    def __init__(self):
+    def __init__(self, outer=None):
         self.store = {} #maps strings to Symbols
         self.numDefinitions = 0
+        self.outer = outer #Enclosing SymbolTable
 
     def define(self, name): #accepts string, returns Symbols
         symbol = Symbol(name, GLOBAL_SCOPE, self.numDefinitions)
+        if self.outer is None:
+            symbol.scope = GLOBAL_SCOPE
+        else:
+            symbol.scope = LOCAL_SCOPE
         self.store[name] = symbol
         self.numDefinitions += 1
         return symbol
@@ -24,4 +30,7 @@ class SymbolTable(object):
         try:
             return self.store[name]
         except:
-            raise SymbolNotFoundError(name)
+            if self.outer is not None:
+                return self.outer.resolve(name)
+            else:
+                raise SymbolNotFoundError(name)

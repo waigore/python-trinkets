@@ -76,8 +76,8 @@ def newError(msg):
 def newFunction(params, body, env):
     return newObject(OBJECT_TYPE_FUNCTION, params, body, env)
 
-def newCompiledFunction(instr):
-    return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr)
+def newCompiledFunction(instr, numLocals=0, numParameters=0):
+    return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr, numLocals, numParameters)
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
@@ -203,10 +203,12 @@ class BoaFunction(BoaObject):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
 
 class BoaCompiledFunction(BoaObject):
-    def __init__(self, instr):
+    def __init__(self, instr, numLocals, numParameters):
         super(BoaCompiledFunction, self).__init__(OBJECT_TYPES.OBJECT_TYPE_COMPILED_FUNCTION)
         self.instr = instr
         self.value = instr
+        self.numLocals = numLocals
+        self.numParameters = numParameters
 
     def __repr__(self):
         return '<compiledFunction (len=%d)>' % (len(self.instr))

@@ -56,10 +56,14 @@ from .code import (
     OPINDEX,
     OPCALL,
     OPRETURNVALUE,
+    OPSETLOCAL,
+    OPGETLOCAL,
 )
 from .symbol import (
     SymbolTable,
     SymbolNotFoundError,
+    GLOBAL_SCOPE,
+    LOCAL_SCOPE,
 )
 
 class BoaCompilerError(Exception): pass
@@ -114,7 +118,10 @@ class Compiler(object):
             elif stmtType == STATEMENT_TYPE_LET:
                 self.compile(node.value)
                 symbol = self.symbolTable.define(node.identifier.value)
-                self.emit(OPSETGLOBAL, symbol.index)
+                if symbol.scope == GLOBAL_SCOPE:
+                    self.emit(OPSETGLOBAL, symbol.index)
+                else:
+                    self.emit(OPSETLOCAL, symbol.index)
             elif stmtType == STATEMENT_TYPE_RETURN:
                 self.compile(node.value)
                 self.emit(OPRETURNVALUE)
@@ -154,6 +161,9 @@ class Compiler(object):
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_FUNC_LIT:
                 self.enterScope()
+                for param in node.parameters:
+                    self.symbolTable.define(param.value)
+
                 self.compile(node.body)
 
                 if self.lastInstructionIs(OPPOP):
@@ -165,19 +175,25 @@ class Compiler(object):
                     self.emit(OPNULL)
                     self.emit(OPRETURNVALUE)
 
+                numLocals = self.symbolTable.numDefinitions
                 instructions = self.leaveScope()
                 compiledInstructions = b''.join(instructions)
-                compiledFn = newCompiledFunction(compiledInstructions)
+                compiledFn = newCompiledFunction(compiledInstructions, numLocals, len(node.parameters))
                 self.emit(OPCONSTANT, self.addConstant(compiledFn))
             elif exprType == EXPRESSION_TYPE_CALL:
                 self.compile(node.function)
-                self.emit(OPCALL)
+                for arg in node.arguments:
+                    self.compile(arg)
+                self.emit(OPCALL, len(node.arguments))
             elif exprType == EXPRESSION_TYPE_IDENT:
                 try:
                     symbol = self.symbolTable.resolve(node.value)
                 except SymbolNotFoundError as e:
                     raise BoaCompilerError("Identifier not defined: %s" % node.value)
-                self.emit(OPGETGLOBAL, symbol.index)
+                if symbol.scope == GLOBAL_SCOPE:
+                    self.emit(OPGETGLOBAL, symbol.index)
+                else:
+                    self.emit(OPGETLOCAL, symbol.index)
             elif exprType == EXPRESSION_TYPE_INDEX:
                 self.compile(node.left)
                 self.compile(node.index)
@@ -256,12 +272,15 @@ class Compiler(object):
 
     def enterScope(self):
         newScope = CompilationScope([], None, None)
+        currST = self.symbolTable
+        self.symbolTable = SymbolTable(outer=currST)
         self.scopes.append(newScope)
         self.scopeIndex += 1
 
     def leaveScope(self):
         instructions = self.currentInstructions()
         currScope = self.scopes.pop()
+        self.symbolTable = self.symbolTable.outer
         self.scopeIndex -= 1
         return instructions
 
