@@ -25,7 +25,10 @@ from boa.code import (
     OPSETLOCAL,
     OPGETLOCAL,
     OPSETINDEX,
+    OPBLOCKCALL,
+    OPBLOCKRETURN,
     makeInstr,
+    formatInstrs,
 )
 from boa.compile import Compiler
 from boa.parse import Parser
@@ -108,79 +111,92 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPPOP),
         ])
 
-    def test_conditionals(self):
-        helper = CompileHelper(self, 'if (true) { 10 } else { 20 }; 3333;')
-        helper.checkInstructionsExpected([
-            makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 10), #0001
-            makeInstr(OPCONSTANT, 0), #0004
-            makeInstr(OPJUMP, 13), #0007
-            makeInstr(OPCONSTANT, 1),#0010
-            makeInstr(OPPOP), #0013
-            makeInstr(OPCONSTANT, 2), #0014
-            makeInstr(OPPOP), #0017
-        ])
 
+    def test_conditionals(self):
         helper = CompileHelper(self, 'if (true) { 10 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 10), #0001
-            makeInstr(OPCONSTANT, 0), #0004
-            makeInstr(OPJUMP, 11), #0007
-            makeInstr(OPNULL),#0010
-            makeInstr(OPPOP), #0011
+            makeInstr(OPJUMPNOTTRUE, 11), #0001
+            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPBLOCKCALL), #0007
+            makeInstr(OPJUMP, 12), #0008
+            makeInstr(OPNULL),#0011
+            makeInstr(OPPOP), #0012
+        ])
+        helper.checkConstantsExpected([
+            10,
+            b''.join([
+                makeInstr(OPCONSTANT, 0),
+                makeInstr(OPBLOCKRETURN), #0000
+            ])
         ])
 
         helper = CompileHelper(self, 'if (true) { }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 8), #0001
-            makeInstr(OPNULL), #0004
-            makeInstr(OPJUMP, 9), #0005
-            makeInstr(OPNULL),#0008
+            makeInstr(OPJUMPNOTTRUE, 11), #0001
+            makeInstr(OPCONSTANT, 0), #0004
+            makeInstr(OPBLOCKCALL),
+            makeInstr(OPJUMP, 12), #0005
+            makeInstr(OPNULL),
             makeInstr(OPPOP), #0009
+        ])
+        helper.checkConstantsExpected([
+            b''.join([
+                makeInstr(OPNULL),
+                makeInstr(OPBLOCKRETURN), #0000
+            ])
         ])
 
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) { 20 } else { 30 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 10), #0001
-            makeInstr(OPCONSTANT, 0), #0004
-            makeInstr(OPJUMP, 23), #0007
+            makeInstr(OPJUMPNOTTRUE, 11), #0001
+            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPBLOCKCALL),
+            makeInstr(OPJUMP, 26), #0007
             makeInstr(OPFALSE), #0010
-            makeInstr(OPJUMPNOTTRUE, 20), #0011
-            makeInstr(OPCONSTANT, 1), #0014
-            makeInstr(OPJUMP, 23), #0017
-            makeInstr(OPCONSTANT, 2),#0020
+            makeInstr(OPJUMPNOTTRUE, 22), #0011
+            makeInstr(OPCONSTANT, 3), #0014
+            makeInstr(OPBLOCKCALL),
+            makeInstr(OPJUMP, 26), #0017
+            makeInstr(OPCONSTANT, 5),#0020
+            makeInstr(OPBLOCKCALL),
             makeInstr(OPPOP), #0023
         ])
 
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) {  } else { 30 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 10), #0001
-            makeInstr(OPCONSTANT, 0), #0004
-            makeInstr(OPJUMP, 21), #0007
+            makeInstr(OPJUMPNOTTRUE, 11), #0001
+            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPBLOCKCALL), #0007
+            makeInstr(OPJUMP, 26), #0007
             makeInstr(OPFALSE), #0010
-            makeInstr(OPJUMPNOTTRUE, 18), #0011
-            makeInstr(OPNULL), #0014
-            makeInstr(OPJUMP, 21), #0015
-            makeInstr(OPCONSTANT, 1),#0018
+            makeInstr(OPJUMPNOTTRUE, 22), #0011
+            makeInstr(OPCONSTANT, 2),#0018
+            makeInstr(OPBLOCKCALL), #0007
+            makeInstr(OPJUMP, 26), #0015
+            makeInstr(OPCONSTANT, 4),#0018
+            makeInstr(OPBLOCKCALL), #0007
             makeInstr(OPPOP), #0021
         ])
 
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) { 20 } else { }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 10), #0001
-            makeInstr(OPCONSTANT, 0), #0004
-            makeInstr(OPJUMP, 21), #0007
-            makeInstr(OPFALSE), #0010
-            makeInstr(OPJUMPNOTTRUE, 20), #0011
-            makeInstr(OPCONSTANT, 1),#0014
-            makeInstr(OPJUMP, 21), #0017
-            makeInstr(OPNULL), #0020
-            makeInstr(OPPOP), #0021
+            makeInstr(OPJUMPNOTTRUE, 11), #0001
+            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPBLOCKCALL), #0007
+            makeInstr(OPJUMP, 26), #0008
+            makeInstr(OPFALSE), #0011
+            makeInstr(OPJUMPNOTTRUE, 22), #0012
+            makeInstr(OPCONSTANT, 3),#0015
+            makeInstr(OPBLOCKCALL), #0018
+            makeInstr(OPJUMP, 26), #0019
+            makeInstr(OPCONSTANT, 4), #0022
+            makeInstr(OPBLOCKCALL), #0025
+            makeInstr(OPPOP), #0026
         ])
 
     def test_letsAndIdents(self):

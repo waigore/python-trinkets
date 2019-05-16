@@ -173,3 +173,15 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, 'let g = 10; let s = fn(a, b){ let c = a+b; c + g;}; let outer = fn() { s(1, 2)+ s(3, 4)+g;}; outer()+g')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '50')
+
+        helper = VMHelper(self, 'let g = if (true) { 10 } elif (false) {  } else { 30 }; g')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+
+        helper = VMHelper(self, 'let g = if (1 < 2) { let b = 10; b/2 }; g')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '5')
+
+        helper = VMHelper(self, 'let f = fn(a) { if (a > 5) { return true;} }; f(1)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_NULL, 'null')
+
+        helper = VMHelper(self, 'let f = fn(a) { if (a > 5) { return true;} }; f(10) != f(1)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')

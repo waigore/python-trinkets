@@ -60,6 +60,8 @@ from .code import (
     OPSETLOCAL,
     OPGETLOCAL,
     OPSETINDEX,
+    OPBLOCKCALL,
+    OPBLOCKRETURN,
 )
 from .symbol import (
     SymbolTable,
@@ -223,12 +225,27 @@ class Compiler(object):
                     self.compile(condition)
                     jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
 
-                    posPreCompilation = len(self.currentInstructions())-1
+                    self.enterScope()
+                    #posPreCompilation = len(self.currentInstructions())-1
                     self.compile(consequence)
                     if self.lastInstructionIs(OPPOP):
+                        #lastPos = self.currentScope().lastInstruction.position
+                        #self.replaceInstruction(lastPos, makeInstr(OPBLOCKRETURN))
+                        #self.currentScope().lastInstruction.opcode = OPBLOCKRETURN
                         self.removeLast()
-                    if len(self.currentInstructions())-1 == posPreCompilation:
+                        self.emit(OPBLOCKRETURN)
+
+                    if not self.lastInstructionIs(OPBLOCKRETURN):
                         self.emit(OPNULL)
+                        self.emit(OPBLOCKRETURN)
+
+                    numLocals = self.symbolTable.numDefinitions
+                    instructions = self.leaveScope()
+
+                    compiledInstructions = b''.join(instructions)
+                    compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
+                    self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                    self.emit(OPBLOCKCALL)
 
                     jumpPos = self.emit(OPJUMP, 9999)
                     jumpPositions.append(jumpPos)
@@ -238,12 +255,29 @@ class Compiler(object):
                 if not node.alternative:
                     self.emit(OPNULL)
                 else:
-                    posPreCompilation = len(self.currentInstructions())-1
+                    #posPreCompilation = len(self.currentInstructions())-1
+                    #self.compile(node.alternative)
+                    #if self.lastInstructionIs(OPPOP):
+                    #    self.removeLast()
+                    #if len(self.currentInstructions())-1 == posPreCompilation:
+                    #    self.emit(OPNULL)
+                    self.enterScope()
                     self.compile(node.alternative)
                     if self.lastInstructionIs(OPPOP):
                         self.removeLast()
-                    if len(self.currentInstructions())-1 == posPreCompilation:
+                        self.emit(OPBLOCKRETURN)
+
+                    if not self.lastInstructionIs(OPBLOCKRETURN):
                         self.emit(OPNULL)
+                        self.emit(OPBLOCKRETURN)
+
+                    numLocals = self.symbolTable.numDefinitions
+                    instructions = self.leaveScope()
+
+                    compiledInstructions = b''.join(instructions)
+                    compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
+                    self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                    self.emit(OPBLOCKCALL)
 
                 afterAlternativePos = self.getInstrBytecodePos(len(self.currentInstructions()))
                 for jumpPos in jumpPositions:

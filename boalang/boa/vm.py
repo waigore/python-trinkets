@@ -28,6 +28,8 @@ from .code import (
     OPSETLOCAL,
     OPGETLOCAL,
     OPSETINDEX,
+    OPBLOCKCALL,
+    OPBLOCKRETURN,
     readUint16,
     readUint8,
 )
@@ -220,6 +222,9 @@ class VM(object):
                 self.incrCurrentFrameIp(1)
                 self.callFunction(numArgs)
                 incrFrameIp = False
+            elif op == OPBLOCKCALL:
+                self.callBlock()
+                incrFrameIp = False
             elif op == OPSETLOCAL:
                 localIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
@@ -236,6 +241,11 @@ class VM(object):
                 if frame is not None: #if frame is None then the effect is the same as a NOP
                     self.sp = frame.basePointer - 1
                     self.push(returnValue)
+            elif op == OPBLOCKRETURN:
+                returnValue = self.pop()
+                frame = self.popFrame()
+                self.sp = frame.basePointer - 1
+                self.push(returnValue)
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
 
@@ -244,6 +254,12 @@ class VM(object):
         if numArgs != fn.numParameters:
             raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
         frame = Frame(FRAME_TYPE_FUNCTION, fn, self.sp-numArgs)
+        self.pushFrame(frame)
+        self.sp = frame.basePointer + fn.numLocals
+
+    def callBlock(self):
+        fn = self.stack[self.sp-1]
+        frame = Frame(FRAME_TYPE_BLOCK, fn, self.sp)
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
 

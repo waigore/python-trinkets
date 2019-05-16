@@ -29,6 +29,8 @@ OPRETURN = b'\x18' #reserved
 OPGETLOCAL = b'\x19'
 OPSETLOCAL = b'\x1A'
 OPSETINDEX = b'\x1B'
+OPBLOCKCALL = b'\x1C'
+OPBLOCKRETURN = b'\x1D'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -69,6 +71,8 @@ DEFINITIONS = DictLikeStruct({
     OPGETLOCAL: Definition("OpGetLocal", [1]),
     OPSETLOCAL: Definition("OpSetLocal", [1]),
     OPSETINDEX: Definition("OpSetIndex", []),
+    OPBLOCKCALL: Definition("OpBlockCall", []),
+    OPBLOCKRETURN: Definition("OpBlockReturn", [])
 })
 
 def lookupOpcode(b):
