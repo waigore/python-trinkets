@@ -50,10 +50,15 @@ STACK_SIZE = 2048
 GLOBALS_SIZE = 65536
 MAX_FRAMES = 1024
 
+FRAME_TYPE_FUNCTION = "FUNCTION_FRAME"
+FRAME_TYPE_BLOCK = "BLOCK_FRAME"
+FRAME_TYPE_LOOP = "LOOP_FRAME"
+
 class BoaVMError(Exception): pass
 
 class Frame(object):
-    def __init__(self, compiledFunction, basePointer):
+    def __init__(self, frameType, compiledFunction, basePointer):
+        self.frameType = frameType
         self.compiledFunction = compiledFunction
         self.ip = 0
         self.basePointer = basePointer
@@ -71,7 +76,7 @@ class VM(object):
         self.frames = [None]*MAX_FRAMES #stack of Frames
         self.frameIndex = 0
 
-        mainFrame = Frame(newCompiledFunction(bytecode.instr), 0)
+        mainFrame = Frame(FRAME_TYPE_BLOCK, newCompiledFunction(bytecode.instr), 0)
         self.pushFrame(mainFrame)
 
 
@@ -87,6 +92,9 @@ class VM(object):
     def currentFrameIp(self):
         return self.currentFrame().ip
 
+    def currentFrameType(self):
+        return self.currentFrame().frameType
+
     def currentInstr(self):
         return self.currentFrame().instr
 
@@ -99,6 +107,18 @@ class VM(object):
     def pushFrame(self, frame):
         self.frames[self.frameIndex] = frame
         self.frameIndex += 1
+
+    def popLastFrameOfType(self, frameType):
+        i = self.frameIndex-1
+        currFrameType = self.frames[i].frameType
+        while i > 0 and currFrameType != frameType:
+            i -= 1
+            currFrameType = self.frames[i].frameType
+        if currFrameType != frameType:
+            return None
+        frame = self.frames[i]
+        self.frameIndex = i
+        return frame
 
     def popFrame(self):
         self.frameIndex -= 1
@@ -212,11 +232,10 @@ class VM(object):
                 self.push(self.stack[frame.basePointer+localIndex])
             elif op == OPRETURNVALUE:
                 returnValue = self.pop()
-                frame = self.popFrame()
-                self.sp = frame.basePointer - 1
-                #self.pop()
-                self.push(returnValue)
-
+                frame = self.popLastFrameOfType(FRAME_TYPE_FUNCTION)
+                if frame is not None: #if frame is None then the effect is the same as a NOP
+                    self.sp = frame.basePointer - 1
+                    self.push(returnValue)
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
 
@@ -224,7 +243,7 @@ class VM(object):
         fn = self.stack[self.sp-1-numArgs]
         if numArgs != fn.numParameters:
             raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
-        frame = Frame(fn, self.sp-numArgs)
+        frame = Frame(FRAME_TYPE_FUNCTION, fn, self.sp-numArgs)
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
 
