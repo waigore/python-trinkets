@@ -24,6 +24,7 @@ from boa.code import (
     OPRETURNVALUE,
     OPSETLOCAL,
     OPGETLOCAL,
+    OPSETINDEX,
     makeInstr,
 )
 from boa.compile import Compiler
@@ -201,6 +202,18 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPPOP), #0013
         ])
 
+        helper = CompileHelper(self, 'let a = 1; let b = a; b = a + 1')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPSETGLOBAL, 0), #0003
+            makeInstr(OPGETGLOBAL, 0), #0006
+            makeInstr(OPSETGLOBAL, 1), #0003
+            makeInstr(OPGETGLOBAL, 0), #0006
+            makeInstr(OPCONSTANT, 1), #0000
+            makeInstr(OPADD), #0012
+            makeInstr(OPSETGLOBAL, 1), #0003
+        ])
+
     def test_arrays(self):
         helper = CompileHelper(self, '[]')
         helper.checkInstructionsExpected([
@@ -237,6 +250,18 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 3),
             makeInstr(OPINDEX),
             makeInstr(OPPOP), #0012
+        ])
+
+        helper = CompileHelper(self, 'let a = [1, 2]; a[0] = 3;')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPCONSTANT, 1), #0000
+            makeInstr(OPARRAY, 2), #0009
+            makeInstr(OPSETGLOBAL, 0),
+            makeInstr(OPGETGLOBAL, 0),
+            makeInstr(OPCONSTANT, 2), #0000
+            makeInstr(OPCONSTANT, 3), #0000
+            makeInstr(OPSETINDEX),
         ])
 
     def test_hashes(self):

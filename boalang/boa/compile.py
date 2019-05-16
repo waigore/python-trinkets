@@ -6,6 +6,7 @@ from .ast import (
     NODE_TYPE_EXPRESSION,
     STATEMENT_TYPE_EXPRESSION,
     STATEMENT_TYPE_LET,
+    STATEMENT_TYPE_ASSIGN,
     STATEMENT_TYPE_RETURN,
     STATEMENT_TYPE_BLOCK,
     EXPRESSION_TYPE_INT_LIT,
@@ -58,6 +59,7 @@ from .code import (
     OPRETURNVALUE,
     OPSETLOCAL,
     OPGETLOCAL,
+    OPSETINDEX,
 )
 from .symbol import (
     SymbolTable,
@@ -122,6 +124,22 @@ class Compiler(object):
                     self.emit(OPSETGLOBAL, symbol.index)
                 else:
                     self.emit(OPSETLOCAL, symbol.index)
+            elif stmtType == STATEMENT_TYPE_ASSIGN:
+                if node.identifier.expressionType == EXPRESSION_TYPE_INDEX:
+                    self.compile(node.identifier.left)
+                    self.compile(node.identifier.index)
+                    self.compile(node.value)
+                    self.emit(OPSETINDEX)
+                else:
+                    self.compile(node.value)
+                    try:
+                        symbol = self.symbolTable.resolve(node.identifier.value)
+                    except SymbolNotFoundError as e:
+                        raise BoaCompilerError("Identifier not defined: %s" % node.value)
+                    if symbol.scope == GLOBAL_SCOPE:
+                        self.emit(OPSETGLOBAL, symbol.index)
+                    else:
+                        self.emit(OPSETLOCAL, symbol.index)
             elif stmtType == STATEMENT_TYPE_RETURN:
                 self.compile(node.value)
                 self.emit(OPRETURNVALUE)

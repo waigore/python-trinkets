@@ -27,6 +27,7 @@ from .code import (
     OPRETURNVALUE,
     OPSETLOCAL,
     OPGETLOCAL,
+    OPSETINDEX,
     readUint16,
     readUint8,
 )
@@ -180,6 +181,11 @@ class VM(object):
                 globalIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(2)
                 self.push(self.globals[globalIndex])
+            elif op == OPSETINDEX:
+                value = self.pop()
+                index = self.pop()
+                left = self.pop()
+                left[index] = value
             elif op == OPJUMP:
                 pos = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
                 self.setCurrentFrameIp(pos - 1)
