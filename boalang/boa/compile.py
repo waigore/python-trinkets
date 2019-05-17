@@ -72,12 +72,18 @@ from .code import (
     OPITER,
     OPITERNEXT,
     OPITERHASNEXT,
+    OPGETBUILTIN,
 )
 from .symbol import (
     SymbolTable,
     SymbolNotFoundError,
     GLOBAL_SCOPE,
     LOCAL_SCOPE,
+    BUILTIN_SCOPE,
+)
+from .builtins import (
+    BUILTIN_FUNCTION_LIST,
+    BUILTIN_FUNCTIONS,
 )
 
 class BoaCompilerError(Exception): pass
@@ -109,12 +115,23 @@ class Compiler(object):
         self.scopes = [CompilationScope([], None, None)] #CompilationScopes
         self.scopeIndex = 0
 
+        for index, fname in enumerate(BUILTIN_FUNCTION_LIST):
+            self.symbolTable.defineBuiltin(index, fname)
+
     @staticmethod
     def withNewState(symbolTable, constants):
         compiler = Compiler()
         compiler.symbolTable = symbolTable
         compiler.constants = constants
         return compiler
+
+    def loadSymbol(self, s):
+        if s.scope == GLOBAL_SCOPE:
+            self.emit(OPGETGLOBAL, s.index)
+        elif s.scope == LOCAL_SCOPE:
+            self.emit(OPGETLOCAL, s.index)
+        else:
+            self.emit(OPGETBUILTIN, s.index)
 
     def compile(self, node):
         nodeType = node.nodeType
@@ -163,10 +180,11 @@ class Compiler(object):
 
                 startPos = self.getInstrBytecodePos(len(self.currentInstructions()))
 
-                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
-                    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
-                else:
-                    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
+                self.loadSymbol(tmpIteratorSymbol)
+                #if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                #    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
+                #else:
+                #    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
                 self.emit(OPITERHASNEXT)
                 jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
 
@@ -182,10 +200,11 @@ class Compiler(object):
                 compiledFn = newCompiledFunction(compiledInstructions, numLocals, 1)
                 self.emit(OPCONSTANT, self.addConstant(compiledFn))
 
-                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
-                    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
-                else:
-                    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
+                self.loadSymbol(tmpIteratorSymbol)
+                #if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                #    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
+                #else:
+                #    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
                 self.emit(OPITERNEXT)
 
                 self.emit(OPLOOPCALL, 1)
@@ -286,10 +305,11 @@ class Compiler(object):
                     symbol = self.symbolTable.resolve(node.value)
                 except SymbolNotFoundError as e:
                     raise BoaCompilerError("Identifier not defined: %s" % node.value)
-                if symbol.scope == GLOBAL_SCOPE:
-                    self.emit(OPGETGLOBAL, symbol.index)
-                else:
-                    self.emit(OPGETLOCAL, symbol.index)
+                self.loadSymbol(symbol)
+                #if symbol.scope == GLOBAL_SCOPE:
+                #    self.emit(OPGETGLOBAL, symbol.index)
+                #else:
+                #    self.emit(OPGETLOCAL, symbol.index)
             elif exprType == EXPRESSION_TYPE_INDEX:
                 self.compile(node.left)
                 self.compile(node.index)

@@ -74,6 +74,17 @@ def builtin_push(args):
     arrObj.value.extend(objs)
     return arrObj
 
+def builtin_pop(args):
+    if len(args) > 1:
+        return newError("Wrong number of arguments to pop. Got %d, want 1" % len(args))
+    arrObj = args[0]
+
+    if arrObj.objectType != OBJECT_TYPES.OBJECT_TYPE_ARRAY:
+        return newError("Argument 1 to pop must be array. Got %s" % arrObj.objectType)
+
+    val = arrObj.value.pop()
+    return val
+
 def builtin_print(args):
     if len(args) == 0:
         return newError("print expected at least 1 argument.")
@@ -81,11 +92,33 @@ def builtin_print(args):
     print(*argsStringified)
     return NULL
 
+B_LEN = 'len'
+B_FIRST = 'first'
+B_LAST = 'last'
+B_REST = 'rest'
+B_PUSH = 'push'
+B_POP = 'pop'
+B_PRINT = 'print'
+
 BUILTIN_FUNCTIONS = {
-    'len': newBuiltinFunction('len', builtin_len),
-    'first': newBuiltinFunction('first', builtin_first),
-    'last': newBuiltinFunction('last', builtin_last),
-    'rest': newBuiltinFunction('rest', builtin_rest),
-    'push': newBuiltinFunction('push', builtin_push),
-    'print': newBuiltinFunction('print', builtin_print),
+    B_LEN: newBuiltinFunction(B_LEN, builtin_len),
+    B_FIRST: newBuiltinFunction(B_FIRST, builtin_first),
+    B_LAST: newBuiltinFunction(B_LAST, builtin_last),
+    B_REST: newBuiltinFunction(B_REST, builtin_rest),
+    B_PUSH: newBuiltinFunction(B_PUSH, builtin_push),
+    B_POP: newBuiltinFunction(B_POP, builtin_pop),
+    B_PRINT: newBuiltinFunction(B_PRINT, builtin_print),
 }
+
+BUILTIN_FUNCTION_LIST = [
+    B_LEN,
+    B_FIRST,
+    B_LAST,
+    B_REST,
+    B_PUSH,
+    B_POP,
+    B_PRINT,
+]
+
+def getBuiltinByIndex(index):
+    return BUILTIN_FUNCTIONS[BUILTIN_FUNCTION_LIST[index]]

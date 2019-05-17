@@ -36,6 +36,7 @@ from .code import (
     OPITER,
     OPITERHASNEXT,
     OPITERNEXT,
+    OPGETBUILTIN,
     readUint16,
     readUint8,
 )
@@ -49,6 +50,9 @@ from .object import (
     TRUE,
     FALSE,
     NULL,
+)
+from .builtins import (
+    getBuiltinByIndex,
 )
 from .evaluator import (
     isTruthy,
@@ -209,6 +213,10 @@ class VM(object):
                 globalIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(2)
                 self.push(self.globals[globalIndex])
+            elif op == OPGETBUILTIN:
+                builtinIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                self.push(getBuiltinByIndex(builtinIndex))
             elif op == OPSETINDEX:
                 value = self.pop()
                 index = self.pop()
@@ -226,7 +234,7 @@ class VM(object):
             elif op == OPCALL:
                 numArgs = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
-                self.callFunction(numArgs)
+                self.executeCall(numArgs)
                 incrFrameIp = False
             elif op == OPBLOCKCALL:
                 self.callBlock()
@@ -283,13 +291,28 @@ class VM(object):
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
 
-    def callFunction(self, numArgs):
-        fn = self.stack[self.sp-1-numArgs]
+    def executeCall(self, numArgs):
+        callee = self.stack[self.sp-1-numArgs]
+        if callee.objectType == OBJECT_TYPES.OBJECT_TYPE_COMPILED_FUNCTION:
+            self.callFunction(callee, numArgs)
+        elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
+            self.callBuiltin(callee, numArgs)
+        else:
+            raise BoaVMError("Calling non-function/builtin")
+
+    def callFunction(self, fn, numArgs):
         if numArgs != fn.numParameters:
             raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
         frame = Frame(FRAME_TYPE_FUNCTION, fn, self.sp-numArgs)
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
+
+    def callBuiltin(self, fn, numArgs):
+        args = self.stack[self.sp-numArgs:self.sp]
+        result = fn.func(args)
+        self.sp = self.sp - 1 - numArgs
+        self.push(result)
+        self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop
 
     def callBlock(self):
         fn = self.stack[self.sp-1]

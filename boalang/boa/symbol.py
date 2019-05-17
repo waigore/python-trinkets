@@ -1,6 +1,7 @@
 
 GLOBAL_SCOPE = "GLOBAL_SCOPE"
 LOCAL_SCOPE = "LOCAL_SCOPE"
+BUILTIN_SCOPE = "BUILTIN_SCOPE"
 
 class SymbolNotFoundError(Exception): pass
 
@@ -24,6 +25,11 @@ class SymbolTable(object):
             symbol.scope = LOCAL_SCOPE
         self.store[name] = symbol
         self.numDefinitions += 1
+        return symbol
+
+    def defineBuiltin(self, index, name):
+        symbol = Symbol(name, BUILTIN_SCOPE, index)
+        self.store[name] = symbol
         return symbol
 
     def resolve(self, name):

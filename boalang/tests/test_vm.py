@@ -198,3 +198,7 @@ class TestVM(unittest.TestCase):
 
         helper = VMHelper(self, 'let c = 0; let a  = [1, 2, 3, 4, 5]; for (i in a) { c = c + i; if (i > 3) { break;} }; c')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
+
+    def test_builtins(self):
+        helper = VMHelper(self, 'len([1, 2, 3])')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')

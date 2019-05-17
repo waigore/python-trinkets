@@ -41,6 +41,7 @@ OPSETGLOBALTEMP = b'\x24' #reserved
 OPITER = b'\x25'
 OPITERNEXT = b'\x26'
 OPITERHASNEXT = b'\x27'
+OPGETBUILTIN = b'\x28'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -89,6 +90,7 @@ DEFINITIONS = DictLikeStruct({
     OPITER: Definition("OpIter", []),
     OPITERNEXT: Definition("OpIterNext", []),
     OPITERHASNEXT: Definition("OpIterHasNext", []),
+    OPGETBUILTIN: Definition("OpGetBuiltin", [1]),
 })
 
 def lookupOpcode(b):
