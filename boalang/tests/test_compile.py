@@ -27,6 +27,9 @@ from boa.code import (
     OPSETINDEX,
     OPBLOCKCALL,
     OPBLOCKRETURN,
+    OPLOOPCALL,
+    OPCONTINUE,
+    OPBREAK,
     makeInstr,
     formatInstrs,
 )
@@ -198,6 +201,35 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPBLOCKCALL), #0025
             makeInstr(OPPOP), #0026
         ])
+
+    def test_loops(self):
+        helper = CompileHelper(self, 'let a = 1; while (a < 10) { a = a + 1; }; a')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #0000
+            makeInstr(OPSETGLOBAL, 0), #0003
+            makeInstr(OPCONSTANT, 1), #0006
+            makeInstr(OPGETGLOBAL, 0), #0009
+            makeInstr(OPGT), #0012
+            makeInstr(OPJUMPNOTTRUE, 23), #0013
+            makeInstr(OPCONSTANT, 3), #0016
+            makeInstr(OPLOOPCALL), #0019
+            makeInstr(OPJUMP, 6), #0020
+            makeInstr(OPGETGLOBAL, 0), #0023
+            makeInstr(OPPOP),
+        ])
+        helper.checkConstantsExpected([
+            1,
+            10,
+            1,
+            b''.join([
+                makeInstr(OPGETGLOBAL, 0), #0009
+                makeInstr(OPCONSTANT, 2), #0016
+                makeInstr(OPADD), #0016
+                makeInstr(OPSETGLOBAL, 0), #0016
+                makeInstr(OPCONTINUE), #0000
+            ])
+        ])
+
 
     def test_letsAndIdents(self):
         helper = CompileHelper(self, 'let a = 1; let b = 2;')

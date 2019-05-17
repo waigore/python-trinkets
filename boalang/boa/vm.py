@@ -30,6 +30,9 @@ from .code import (
     OPSETINDEX,
     OPBLOCKCALL,
     OPBLOCKRETURN,
+    OPLOOPCALL,
+    OPBREAK,
+    OPCONTINUE,
     readUint16,
     readUint8,
 )
@@ -225,6 +228,9 @@ class VM(object):
             elif op == OPBLOCKCALL:
                 self.callBlock()
                 incrFrameIp = False
+            elif op == OPLOOPCALL:
+                self.callLoop()
+                incrFrameIp = False
             elif op == OPSETLOCAL:
                 localIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
@@ -246,6 +252,15 @@ class VM(object):
                 frame = self.popFrame()
                 self.sp = frame.basePointer - 1
                 self.push(returnValue)
+            elif op == OPCONTINUE:
+                frame = self.popLastFrameOfType(FRAME_TYPE_LOOP)
+                if frame is not None:
+                    self.sp = frame.basePointer - 1
+            elif op == OPBREAK:
+                frame = self.popLastFrameOfType(FRAME_TYPE_LOOP)
+                if frame is not None:
+                    self.sp = frame.basePointer - 1
+                    self.incrCurrentFrameIp(3) #to go past the jump to start of loop
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
 
@@ -260,6 +275,12 @@ class VM(object):
     def callBlock(self):
         fn = self.stack[self.sp-1]
         frame = Frame(FRAME_TYPE_BLOCK, fn, self.sp)
+        self.pushFrame(frame)
+        self.sp = frame.basePointer + fn.numLocals
+
+    def callLoop(self):
+        fn = self.stack[self.sp-1]
+        frame = Frame(FRAME_TYPE_LOOP, fn, self.sp)
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
 

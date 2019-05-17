@@ -274,6 +274,9 @@ class Parser(object):
 
         blockStatement = self.parseBlockStatement()
 
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
+
         whileStatement = WhileStatement(whileToken, condition, blockStatement)
         return whileStatement
 
@@ -301,6 +304,9 @@ class Parser(object):
             return None
 
         blockStatement = self.parseBlockStatement()
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
 
         forStatement = ForStatement(forToken, ident, iterable, blockStatement)
         return forStatement

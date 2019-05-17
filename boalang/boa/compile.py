@@ -9,6 +9,9 @@ from .ast import (
     STATEMENT_TYPE_ASSIGN,
     STATEMENT_TYPE_RETURN,
     STATEMENT_TYPE_BLOCK,
+    STATEMENT_TYPE_WHILE,
+    STATEMENT_TYPE_BREAK,
+    STATEMENT_TYPE_CONTINUE,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
@@ -62,6 +65,9 @@ from .code import (
     OPSETINDEX,
     OPBLOCKCALL,
     OPBLOCKRETURN,
+    OPLOOPCALL,
+    OPCONTINUE,
+    OPBREAK,
 )
 from .symbol import (
     SymbolTable,
@@ -142,6 +148,32 @@ class Compiler(object):
                         self.emit(OPSETGLOBAL, symbol.index)
                     else:
                         self.emit(OPSETLOCAL, symbol.index)
+
+            elif stmtType == STATEMENT_TYPE_WHILE:
+                startPos = self.getInstrBytecodePos(len(self.currentInstructions()))
+                condition = node.condition
+                self.compile(condition)
+                jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
+
+                self.enterScope()
+                self.compile(node.blockStatement)
+                self.emit(OPCONTINUE)
+
+                numLocals = self.symbolTable.numDefinitions
+                instructions = self.leaveScope()
+
+                compiledInstructions = b''.join(instructions)
+                compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
+                self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                self.emit(OPLOOPCALL)
+                self.emit(OPJUMP, startPos)
+
+                afterLoopCallPos = self.getInstrBytecodePos(len(self.currentInstructions()))
+                self.changeOperand(jumpNotTruePos, afterLoopCallPos)
+            elif stmtType == STATEMENT_TYPE_CONTINUE:
+                self.emit(OPCONTINUE)
+            elif stmtType == STATEMENT_TYPE_BREAK:
+                self.emit(OPBREAK)
             elif stmtType == STATEMENT_TYPE_RETURN:
                 self.compile(node.value)
                 self.emit(OPRETURNVALUE)
