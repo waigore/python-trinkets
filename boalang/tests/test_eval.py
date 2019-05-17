@@ -160,6 +160,7 @@ class TestEval(unittest.TestCase):
              ("let a = 0; for (i in [1, 2, 3, 4, 5]) { a = a + i; if (a > 5) { break; } } a", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
              ("let nop = fn() {} let a = nop(); a", OBJECT_TYPES.OBJECT_TYPE_NULL, None),
              ("let adder = fn(amt) { return fn(x) {x+amt}}; let myAdder = adder(2); myAdder(5)", OBJECT_TYPES.OBJECT_TYPE_INT, 7),
+             ("let a = 0; let d = {1:1, 2:2, 3:3}; for (i in d) { a = a + d[i]; } a", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
         ]
 
         for code, expectedType, expectedValue in exprs:

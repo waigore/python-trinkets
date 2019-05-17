@@ -186,8 +186,15 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'let f = fn(a) { if (a > 5) { return true; false} }; f(10)')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
 
+    def test_loops(self):
         helper = VMHelper(self, 'let a = 1; while (a < 10) { a = a + 1; }; a')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')
 
         helper = VMHelper(self, 'let a = 1; while (a < 10) { a = a + 1; if (a > 5) { break;} }; a')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '6')
+
+        helper = VMHelper(self, 'let c = 0; let a = [1, 2, 3]; for (i in a) { c = c + i; }; c')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '6')
+
+        helper = VMHelper(self, 'let c = 0; let a  = [1, 2, 3, 4, 5]; for (i in a) { c = c + i; if (i > 3) { break;} }; c')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '10')

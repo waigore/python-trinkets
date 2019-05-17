@@ -33,6 +33,9 @@ from .code import (
     OPLOOPCALL,
     OPBREAK,
     OPCONTINUE,
+    OPITER,
+    OPITERHASNEXT,
+    OPITERNEXT,
     readUint16,
     readUint8,
 )
@@ -229,7 +232,9 @@ class VM(object):
                 self.callBlock()
                 incrFrameIp = False
             elif op == OPLOOPCALL:
-                self.callLoop()
+                numArgs = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                self.callLoop(numArgs)
                 incrFrameIp = False
             elif op == OPSETLOCAL:
                 localIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
@@ -241,6 +246,20 @@ class VM(object):
                 self.incrCurrentFrameIp(1)
                 frame = self.currentFrame()
                 self.push(self.stack[frame.basePointer+localIndex])
+            elif op == OPITER:
+                iterable = self.pop()
+                iterator = iter(iterable)
+                self.push(iterator)
+            elif op == OPITERHASNEXT:
+                iterator = self.pop()
+                self.push(TRUE if iterator.hasNext() else FALSE)
+            elif op == OPITERNEXT:
+                iterator = self.pop()
+                try:
+                    val = next(iterator)
+                    self.push(val)
+                except StopIteration:
+                    raise BoaVMError("Iterator has no more elements")
             elif op == OPRETURNVALUE:
                 returnValue = self.pop()
                 frame = self.popLastFrameOfType(FRAME_TYPE_FUNCTION)
@@ -278,9 +297,11 @@ class VM(object):
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
 
-    def callLoop(self):
-        fn = self.stack[self.sp-1]
-        frame = Frame(FRAME_TYPE_LOOP, fn, self.sp)
+    def callLoop(self, numArgs):
+        fn = self.stack[self.sp-1-numArgs]
+        if numArgs != fn.numParameters:
+            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
+        frame = Frame(FRAME_TYPE_LOOP, fn, self.sp-numArgs)
         self.pushFrame(frame)
         self.sp = frame.basePointer + fn.numLocals
 

@@ -30,6 +30,9 @@ from boa.code import (
     OPLOOPCALL,
     OPCONTINUE,
     OPBREAK,
+    OPITER,
+    OPITERNEXT,
+    OPITERHASNEXT,
     makeInstr,
     formatInstrs,
 )
@@ -210,11 +213,11 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 1), #0006
             makeInstr(OPGETGLOBAL, 0), #0009
             makeInstr(OPGT), #0012
-            makeInstr(OPJUMPNOTTRUE, 23), #0013
+            makeInstr(OPJUMPNOTTRUE, 24), #0013
             makeInstr(OPCONSTANT, 3), #0016
-            makeInstr(OPLOOPCALL), #0019
-            makeInstr(OPJUMP, 6), #0020
-            makeInstr(OPGETGLOBAL, 0), #0023
+            makeInstr(OPLOOPCALL, 0), #0019
+            makeInstr(OPJUMP, 6), #0021
+            makeInstr(OPGETGLOBAL, 0), #0024
             makeInstr(OPPOP),
         ])
         helper.checkConstantsExpected([
@@ -228,6 +231,28 @@ class TestCompilation(unittest.TestCase):
                 makeInstr(OPSETGLOBAL, 0), #0016
                 makeInstr(OPCONTINUE), #0000
             ])
+        ])
+
+        helper = CompileHelper(self, 'let c = 0; let a = [1, 2, 3]; for (i in a) { c = c + i; }')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0), #let c = 0;
+            makeInstr(OPSETGLOBAL, 0),
+            makeInstr(OPCONSTANT, 1), #let a = [1, 2, 3];
+            makeInstr(OPCONSTANT, 2),
+            makeInstr(OPCONSTANT, 3),
+            makeInstr(OPARRAY, 3),
+            makeInstr(OPSETGLOBAL, 1),
+            makeInstr(OPGETGLOBAL, 1), #let <iter> = iter(a);
+            makeInstr(OPITER),
+            makeInstr(OPSETGLOBAL, 2),
+            makeInstr(OPGETGLOBAL, 2), #0028 if <iter>.hasNext()
+            makeInstr(OPITERHASNEXT),
+            makeInstr(OPJUMPNOTTRUE, 47),
+            makeInstr(OPCONSTANT, 4), #<for block>
+            makeInstr(OPGETGLOBAL, 2), #iter.next()
+            makeInstr(OPITERNEXT),
+            makeInstr(OPLOOPCALL, 1), #<for block>()
+            makeInstr(OPJUMP, 28),
         ])
 
 

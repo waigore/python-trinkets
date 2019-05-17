@@ -10,6 +10,7 @@ from .ast import (
     STATEMENT_TYPE_RETURN,
     STATEMENT_TYPE_BLOCK,
     STATEMENT_TYPE_WHILE,
+    STATEMENT_TYPE_FOR,
     STATEMENT_TYPE_BREAK,
     STATEMENT_TYPE_CONTINUE,
     EXPRESSION_TYPE_INT_LIT,
@@ -68,6 +69,9 @@ from .code import (
     OPLOOPCALL,
     OPCONTINUE,
     OPBREAK,
+    OPITER,
+    OPITERNEXT,
+    OPITERHASNEXT,
 )
 from .symbol import (
     SymbolTable,
@@ -148,7 +152,47 @@ class Compiler(object):
                         self.emit(OPSETGLOBAL, symbol.index)
                     else:
                         self.emit(OPSETLOCAL, symbol.index)
+            elif stmtType == STATEMENT_TYPE_FOR:
+                self.compile(node.iterable)
+                self.emit(OPITER)
+                tmpIteratorSymbol = self.symbolTable.define("__temp__%02d" % self.symbolTable.numDefinitions)
+                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                    self.emit(OPSETGLOBAL, tmpIteratorSymbol.index)
+                else:
+                    self.emit(OPSETLOCAL, tmpIteratorSymbol.index)
 
+                startPos = self.getInstrBytecodePos(len(self.currentInstructions()))
+
+                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
+                else:
+                    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
+                self.emit(OPITERHASNEXT)
+                jumpNotTruePos = self.emit(OPJUMPNOTTRUE, 9999)
+
+                self.enterScope()
+                self.symbolTable.define(node.iterator.value)
+                self.compile(node.blockStatement)
+                self.emit(OPCONTINUE)
+
+                numLocals = self.symbolTable.numDefinitions
+                instructions = self.leaveScope()
+
+                compiledInstructions = b''.join(instructions)
+                compiledFn = newCompiledFunction(compiledInstructions, numLocals, 1)
+                self.emit(OPCONSTANT, self.addConstant(compiledFn))
+
+                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                    self.emit(OPGETGLOBAL, tmpIteratorSymbol.index)
+                else:
+                    self.emit(OPGETLOCAL, tmpIteratorSymbol.index)
+                self.emit(OPITERNEXT)
+
+                self.emit(OPLOOPCALL, 1)
+                self.emit(OPJUMP, startPos)
+
+                afterLoopCallPos = self.getInstrBytecodePos(len(self.currentInstructions()))
+                self.changeOperand(jumpNotTruePos, afterLoopCallPos)
             elif stmtType == STATEMENT_TYPE_WHILE:
                 startPos = self.getInstrBytecodePos(len(self.currentInstructions()))
                 condition = node.condition
@@ -165,7 +209,7 @@ class Compiler(object):
                 compiledInstructions = b''.join(instructions)
                 compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
                 self.emit(OPCONSTANT, self.addConstant(compiledFn))
-                self.emit(OPLOOPCALL)
+                self.emit(OPLOOPCALL, 0)
                 self.emit(OPJUMP, startPos)
 
                 afterLoopCallPos = self.getInstrBytecodePos(len(self.currentInstructions()))

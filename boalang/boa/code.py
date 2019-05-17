@@ -34,6 +34,13 @@ OPBLOCKRETURN = b'\x1D'
 OPLOOPCALL = b'\x1E'
 OPBREAK = b'\x1F'
 OPCONTINUE = b'\x20'
+OPGETTEMP = b'\x21' #reserved
+OPSETTEMP = b'\x22' #reserved
+OPGETGLOBALTEMP = b'\x23' #reserved
+OPSETGLOBALTEMP = b'\x24' #reserved
+OPITER = b'\x25'
+OPITERNEXT = b'\x26'
+OPITERHASNEXT = b'\x27'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -76,9 +83,12 @@ DEFINITIONS = DictLikeStruct({
     OPSETINDEX: Definition("OpSetIndex", []),
     OPBLOCKCALL: Definition("OpBlockCall", []),
     OPBLOCKRETURN: Definition("OpBlockReturn", []),
-    OPLOOPCALL: Definition("OpLoopCall", []),
+    OPLOOPCALL: Definition("OpLoopCall", [1]),
     OPBREAK: Definition("OpBreak", []),
     OPCONTINUE: Definition("OpContinue", []),
+    OPITER: Definition("OpIter", []),
+    OPITERNEXT: Definition("OpIterNext", []),
+    OPITERHASNEXT: Definition("OpIterHasNext", []),
 })
 
 def lookupOpcode(b):
