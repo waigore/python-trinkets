@@ -5,8 +5,10 @@ OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
 OBJECT_TYPE_ARRAY = 'OBJECT_TYPE_ARRAY'
+OBJECT_TYPE_ITERATOR = 'OBJECT_TYPE_ITERATOR'
 OBJECT_TYPE_HASH = 'OBJECT_TYPE_HASH'
 OBJECT_TYPE_HASH_PAIR = 'OBJECT_TYPE_HASH_PAIR'
+OBJECT_TYPE_HASH_ITERATOR = 'OBJECT_TYPE_HASH_ITERATOR'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_CLOSURE = 'OBJECT_TYPE_CLOSURE'
@@ -38,6 +40,8 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_ARRAY: BoaObjectType(OBJECT_TYPE_ARRAY, "array", isIterable=True),
     OBJECT_TYPE_HASH: BoaObjectType(OBJECT_TYPE_HASH, "hash", isIterable=True),
     OBJECT_TYPE_HASH_PAIR: BoaObjectType(OBJECT_TYPE_HASH_PAIR, "hashPair"),
+    OBJECT_TYPE_ITERATOR: BoaObjectType(OBJECT_TYPE_ITERATOR, "iterator"),
+    OBJECT_TYPE_HASH_ITERATOR: BoaObjectType(OBJECT_TYPE_HASH_ITERATOR, "hashIterator"),
     OBJECT_TYPE_NULL: BoaObjectType(OBJECT_TYPE_NULL, "null"),
     OBJECT_TYPE_RETURN_VALUE: BoaObjectType(OBJECT_TYPE_RETURN_VALUE, "returnValue"),
     OBJECT_TYPE_BREAK: BoaObjectType(OBJECT_TYPE_BREAK, "break"),
@@ -271,8 +275,9 @@ class BoaArray(BoaObject):
     def inspect(self):
         return '[%s]' % (', '.join([val.inspect() for val in self.value]))
 
-class BoaCountingIterator(object):
+class BoaCountingIterator(BoaObject):
     def __init__(self, iterable):
+        super(BoaCountingIterator, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ITERATOR)
         self.iterable = iterable
         self.counter = 0
 
@@ -291,8 +296,16 @@ class BoaCountingIterator(object):
         self.counter += 1
         return val
 
-class BoaHashIterator(object):
+    def __repr__(self):
+        return '<iterator counter=%d>' % (self.counter)
+
+    def inspect(self):
+        return '<iterator counter=%d>' % (self.counter)
+
+
+class BoaHashIterator(BoaObject):
     def __init__(self, hash):
+        super(BoaHashIterator, self).__init__(OBJECT_TYPES.OBJECT_TYPE_HASH_ITERATOR)
         self.hash = hash
         self.counter = 0
         self.keySnapshot = list(self.hash.value.keys())
@@ -311,6 +324,12 @@ class BoaHashIterator(object):
         val = self.hash.value[self.keySnapshot[self.counter]].value
         self.counter += 1
         return val
+
+    def __repr__(self):
+        return '<hashiterator counter=%d>' % (self.counter)
+
+    def inspect(self):
+        return '<hashiterator counter=%d>' % (self.counter)
 
 class BoaHash(BoaObject):
     def __init__(self, pairs):
