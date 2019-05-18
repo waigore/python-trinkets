@@ -102,12 +102,30 @@ class Lexer(object):
 
     def readString(self, quoteChar):
         pos = self.position + 1
+        s = ""
         while True:
             self.readChar()
-            if self.ch == quoteChar or self.ch == '':
+            if self.ch == '\\':
+                self.readChar()
+                if self.ch == '\\':
+                    s += '\\'
+                elif self.ch == 'n':
+                    s += '\n'
+                elif self.ch == 'r':
+                    s += '\r'
+                elif self.ch == 't':
+                    s += '\t'
+                elif self.ch == 'b':
+                    s += '\b'
+                else:
+                    s += self.ch
+            elif self.ch == quoteChar or self.ch == '':
                 self.readChar()
                 break
-        return self.input[pos:self.position-1]
+            else:
+                s = s + self.ch
+        #return self.input[pos:self.position-1]
+        return s
 
     def readIdentifier(self):
         pos = self.position

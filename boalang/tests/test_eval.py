@@ -65,6 +65,8 @@ class TestEval(unittest.TestCase):
             ("1 notin [1, 2, 3]", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, False),
             ("1 notin [1, 2, 3] == not(1 in [1, 2, 3])", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
             ("'1' in '123'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("'mon' + 'key' == 'monkey'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ('"\\nmy\\rfair\\tlady\\b\\\\"', OBJECT_TYPES.OBJECT_TYPE_STRING, '\nmy\rfair\tlady\b\\'),
         ]
 
         for code, expectedType, expectedValue in exprs:
