@@ -207,9 +207,10 @@ class FunctionLiteral(Expression):
         super(FunctionLiteral, self).__init__(EXPRESSION_TYPE_FUNC_LIT, token)
         self.parameters = parameters #list of identifiers
         self.body = body #BlockStatement
+        self.name = None #only set in let statements
 
     def __repr__(self):
-        return 'fn (%s) %s' % (','.join([str(p) for p in self.parameters]), self.body)
+        return 'fn%s (%s) %s' % (self.name if self.name else '', ','.join([str(p) for p in self.parameters]), self.body)
 
 class PrefixExpression(Expression):
     def __init__(self, token, right):

@@ -73,6 +73,9 @@ from .code import (
     OPITERNEXT,
     OPITERHASNEXT,
     OPGETBUILTIN,
+    OPCLOSURE,
+    OPGETFREE,
+    OPCURRENTCLOSURE,
 )
 from .symbol import (
     SymbolTable,
@@ -80,6 +83,8 @@ from .symbol import (
     GLOBAL_SCOPE,
     LOCAL_SCOPE,
     BUILTIN_SCOPE,
+    FREE_SCOPE,
+    FUNCTION_SCOPE,
 )
 from .builtins import (
     BUILTIN_FUNCTION_LIST,
@@ -130,6 +135,10 @@ class Compiler(object):
             self.emit(OPGETGLOBAL, s.index)
         elif s.scope == LOCAL_SCOPE:
             self.emit(OPGETLOCAL, s.index)
+        elif s.scope == FREE_SCOPE:
+            self.emit(OPGETFREE, s.index)
+        elif s.scope == FUNCTION_SCOPE:
+            self.emit(OPCURRENTCLOSURE)
         else:
             self.emit(OPGETBUILTIN, s.index)
 
@@ -147,8 +156,8 @@ class Compiler(object):
                 for statement in node.statements:
                     self.compile(statement)
             elif stmtType == STATEMENT_TYPE_LET:
-                self.compile(node.value)
                 symbol = self.symbolTable.define(node.identifier.value)
+                self.compile(node.value)
                 if symbol.scope == GLOBAL_SCOPE:
                     self.emit(OPSETGLOBAL, symbol.index)
                 else:
@@ -193,12 +202,15 @@ class Compiler(object):
                 self.compile(node.blockStatement)
                 self.emit(OPCONTINUE)
 
+                freeSymbols = self.symbolTable.freeSymbols
                 numLocals = self.symbolTable.numDefinitions
                 instructions = self.leaveScope()
+                for freeSymbol in freeSymbols:
+                    self.loadSymbol(freeSymbol)
 
                 compiledInstructions = b''.join(instructions)
                 compiledFn = newCompiledFunction(compiledInstructions, numLocals, 1)
-                self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
 
                 self.loadSymbol(tmpIteratorSymbol)
                 #if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
@@ -222,12 +234,15 @@ class Compiler(object):
                 self.compile(node.blockStatement)
                 self.emit(OPCONTINUE)
 
+                freeSymbols = self.symbolTable.freeSymbols
                 numLocals = self.symbolTable.numDefinitions
                 instructions = self.leaveScope()
+                for freeSymbol in freeSymbols:
+                    self.loadSymbol(freeSymbol)
 
                 compiledInstructions = b''.join(instructions)
                 compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
-                self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
                 self.emit(OPLOOPCALL, 0)
                 self.emit(OPJUMP, startPos)
 
@@ -276,6 +291,8 @@ class Compiler(object):
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_FUNC_LIT:
                 self.enterScope()
+                if node.name is not None:
+                    self.symbolTable.defineFunctionName(node.name)
                 for param in node.parameters:
                     self.symbolTable.define(param.value)
 
@@ -290,11 +307,14 @@ class Compiler(object):
                     self.emit(OPNULL)
                     self.emit(OPRETURNVALUE)
 
+                freeSymbols = self.symbolTable.freeSymbols
                 numLocals = self.symbolTable.numDefinitions
                 instructions = self.leaveScope()
+                for freeSymbol in freeSymbols:
+                    self.loadSymbol(freeSymbol)
                 compiledInstructions = b''.join(instructions)
                 compiledFn = newCompiledFunction(compiledInstructions, numLocals, len(node.parameters))
-                self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
             elif exprType == EXPRESSION_TYPE_CALL:
                 self.compile(node.function)
                 for arg in node.arguments:
@@ -335,12 +355,15 @@ class Compiler(object):
                         self.emit(OPNULL)
                         self.emit(OPBLOCKRETURN)
 
+                    freeSymbols = self.symbolTable.freeSymbols
                     numLocals = self.symbolTable.numDefinitions
                     instructions = self.leaveScope()
+                    for freeSymbol in freeSymbols:
+                        self.loadSymbol(freeSymbol)
 
                     compiledInstructions = b''.join(instructions)
                     compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
-                    self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                    self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
                     self.emit(OPBLOCKCALL)
 
                     jumpPos = self.emit(OPJUMP, 9999)
@@ -367,12 +390,15 @@ class Compiler(object):
                         self.emit(OPNULL)
                         self.emit(OPBLOCKRETURN)
 
+                    freeSymbols = self.symbolTable.freeSymbols
                     numLocals = self.symbolTable.numDefinitions
                     instructions = self.leaveScope()
+                    for freeSymbol in freeSymbols:
+                        self.loadSymbol(freeSymbol)
 
                     compiledInstructions = b''.join(instructions)
                     compiledFn = newCompiledFunction(compiledInstructions, numLocals, 0)
-                    self.emit(OPCONSTANT, self.addConstant(compiledFn))
+                    self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
                     self.emit(OPBLOCKCALL)
 
                 afterAlternativePos = self.getInstrBytecodePos(len(self.currentInstructions()))

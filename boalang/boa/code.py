@@ -42,6 +42,9 @@ OPITER = b'\x25'
 OPITERNEXT = b'\x26'
 OPITERHASNEXT = b'\x27'
 OPGETBUILTIN = b'\x28'
+OPCLOSURE = b'\x29'
+OPGETFREE = b'\x2A'
+OPCURRENTCLOSURE = b'\x2B'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -91,6 +94,9 @@ DEFINITIONS = DictLikeStruct({
     OPITERNEXT: Definition("OpIterNext", []),
     OPITERHASNEXT: Definition("OpIterHasNext", []),
     OPGETBUILTIN: Definition("OpGetBuiltin", [1]),
+    OPCLOSURE: Definition("OpClosure", [2, 1]),
+    OPGETFREE: Definition("OpGetFree", [1]),
+    OPCURRENTCLOSURE: Definition("OpCurrentClosure", []),
 })
 
 def lookupOpcode(b):
@@ -128,7 +134,7 @@ def formatInstr(definition, operands):
     operandCount = len(definition.operandWidths)
     if len(operands) != operandCount:
         raise BoaOperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
-    return "%s%s%s" % (definition.name, ' ' if operands else '', ''.join(['%d' % operand for operand in operands]))
+    return "%s%s%s" % (definition.name, ' ' if operands else '', ' '.join(['%d' % operand for operand in operands]))
 
 def readUint16(instr):
     return readUint(instr, 2)

@@ -9,6 +9,7 @@ OBJECT_TYPE_HASH = 'OBJECT_TYPE_HASH'
 OBJECT_TYPE_HASH_PAIR = 'OBJECT_TYPE_HASH_PAIR'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
+OBJECT_TYPE_CLOSURE = 'OBJECT_TYPE_CLOSURE'
 OBJECT_TYPE_COMPILED_FUNCTION = 'OBJECT_TYPE_COMPILED_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
@@ -45,6 +46,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
     OBJECT_TYPE_COMPILED_FUNCTION: BoaObjectType(OBJECT_TYPE_COMPILED_FUNCTION, "compiledFunction"),
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
+    OBJECT_TYPE_CLOSURE: BoaObjectType(OBJECT_TYPE_CLOSURE, "closure"),
 })
 
 def newObject(typName, *args):
@@ -81,6 +83,9 @@ def newCompiledFunction(instr, numLocals=0, numParameters=0):
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
+
+def newClosure(compiledFunction, freeVariables):
+    return newObject(OBJECT_TYPE_CLOSURE, compiledFunction, freeVariables)
 
 class BoaObject(object):
     def __init__(self, typ):
@@ -193,6 +198,23 @@ class BoaFunction(BoaObject):
 
     def inspect(self):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
+
+class BoaClosure(BoaObject):
+    def __init__(self, compiledFunction, freeVariables):
+        super(BoaClosure, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLOSURE)
+        self.compiledFunction = compiledFunction
+        self.freeVariables = freeVariables
+
+    def __repr__(self):
+        return '<closure %s free=[%s]>' % (
+            self.compiledFunction, ', '.join([free.inspect() for free in self.freeVariables])
+        )
+
+    def inspect(self):
+        return '<closure %s free=[%s]>' % (
+            self.compiledFunction, ', '.join([free.inspect() for free in self.freeVariables])
+        )
+
 
 class BoaCompiledFunction(BoaObject):
     def __init__(self, instr, numLocals, numParameters):
@@ -365,4 +387,5 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_ARRAY: BoaArray,
     OBJECT_TYPE_HASH: BoaHash,
     OBJECT_TYPE_COMPILED_FUNCTION: BoaCompiledFunction,
+    OBJECT_TYPE_CLOSURE: BoaClosure,
 })

@@ -237,6 +237,8 @@ class Parser(object):
         self.nextToken()
 
         value = self.parseExpression(LOWEST)
+        if value.expressionType == EXPRESSION_TYPE_FUNC_LIT:
+            value.name = ident.value
         statement = LetStatement(letToken, ident, value)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):

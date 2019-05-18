@@ -24,6 +24,13 @@ class VMHelper(object):
         self.vm = VM(self.bytecode)
         self.vm.run()
 
+        self.checkSanity()
+
+    def checkSanity(self):
+        #this WILL blow up if an errant opcode left something on the stack for example...
+        self.testCase.assertEqual(self.vm.sp, 0)
+        self.testCase.assertEqual(self.vm.frameIndex, 1)
+
     def checkStackExpected(self, expectedPairs):
         inspectedStack = self.vm.inspectStack()
         self.testCase.assertEqual(len(expectedPairs), len(inspectedStack))
@@ -202,3 +209,23 @@ class TestVM(unittest.TestCase):
     def test_builtins(self):
         helper = VMHelper(self, 'len([1, 2, 3])')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')
+
+    def test_closures(self):
+        helper = VMHelper(self, 'let newAdder = fn(a, b) { fn(c) {a + b + c};} let a = newAdder(1, 2); a(8)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '11')
+
+        helper = VMHelper(self, 'let newAdder = fn(a, b) { let c = a + b; fn(d) { c + d}; } let a = newAdder(1, 2); a(8)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '11')
+
+    def test_recursion(self):
+        helper = VMHelper(self, 'let c = fn(x) { if (x == 0) { 0 } else {c(x-1)} }; c(1)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '0')
+
+        helper = VMHelper(self, 'let fib = fn(n) { if (n <= 1) { n } else { fib(n-1) + fib(n-2) } }; fib(9)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '34')
+
+        helper = VMHelper(self, 'let w = fn() { let c = fn(x) { if (x == 0) { 0 } else { c(x-1) } }; c(1) }; w()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '0')
+
+if __name__ == '__main__':
+    unittest.main()

@@ -33,6 +33,7 @@ from boa.code import (
     OPITER,
     OPITERNEXT,
     OPITERHASNEXT,
+    OPCLOSURE,
     makeInstr,
     formatInstrs,
 )
@@ -122,10 +123,10 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'if (true) { 10 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 11), #0001
-            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPJUMPNOTTRUE, 12), #0001
+            makeInstr(OPCLOSURE, 1, 0), #0004
             makeInstr(OPBLOCKCALL), #0007
-            makeInstr(OPJUMP, 12), #0008
+            makeInstr(OPJUMP, 13), #0008
             makeInstr(OPNULL),#0011
             makeInstr(OPPOP), #0012
         ])
@@ -140,10 +141,10 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'if (true) { }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 11), #0001
-            makeInstr(OPCONSTANT, 0), #0004
+            makeInstr(OPJUMPNOTTRUE, 12), #0001
+            makeInstr(OPCLOSURE, 0, 0), #0004
             makeInstr(OPBLOCKCALL),
-            makeInstr(OPJUMP, 12), #0005
+            makeInstr(OPJUMP, 13), #0005
             makeInstr(OPNULL),
             makeInstr(OPPOP), #0009
         ])
@@ -157,16 +158,16 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) { 20 } else { 30 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 11), #0001
-            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPJUMPNOTTRUE, 12), #0001
+            makeInstr(OPCLOSURE, 1, 0), #0004
             makeInstr(OPBLOCKCALL),
-            makeInstr(OPJUMP, 26), #0007
+            makeInstr(OPJUMP, 29), #0007
             makeInstr(OPFALSE), #0010
-            makeInstr(OPJUMPNOTTRUE, 22), #0011
-            makeInstr(OPCONSTANT, 3), #0014
+            makeInstr(OPJUMPNOTTRUE, 24), #0011
+            makeInstr(OPCLOSURE, 3, 0), #0014
             makeInstr(OPBLOCKCALL),
-            makeInstr(OPJUMP, 26), #0017
-            makeInstr(OPCONSTANT, 5),#0020
+            makeInstr(OPJUMP, 29), #0017
+            makeInstr(OPCLOSURE, 5, 0),#0020
             makeInstr(OPBLOCKCALL),
             makeInstr(OPPOP), #0023
         ])
@@ -174,16 +175,16 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) {  } else { 30 }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 11), #0001
-            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPJUMPNOTTRUE, 12), #0001
+            makeInstr(OPCLOSURE, 1, 0), #0004
             makeInstr(OPBLOCKCALL), #0007
-            makeInstr(OPJUMP, 26), #0007
+            makeInstr(OPJUMP, 29), #0007
             makeInstr(OPFALSE), #0010
-            makeInstr(OPJUMPNOTTRUE, 22), #0011
-            makeInstr(OPCONSTANT, 2),#0018
+            makeInstr(OPJUMPNOTTRUE, 24), #0011
+            makeInstr(OPCLOSURE, 2, 0),#0018
             makeInstr(OPBLOCKCALL), #0007
-            makeInstr(OPJUMP, 26), #0015
-            makeInstr(OPCONSTANT, 4),#0018
+            makeInstr(OPJUMP, 29), #0015
+            makeInstr(OPCLOSURE, 4, 0),#0018
             makeInstr(OPBLOCKCALL), #0007
             makeInstr(OPPOP), #0021
         ])
@@ -191,16 +192,16 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'if (true) { 10 } elif (false) { 20 } else { }')
         helper.checkInstructionsExpected([
             makeInstr(OPTRUE), #0000
-            makeInstr(OPJUMPNOTTRUE, 11), #0001
-            makeInstr(OPCONSTANT, 1), #0004
+            makeInstr(OPJUMPNOTTRUE, 12), #0001
+            makeInstr(OPCLOSURE, 1, 0), #0004
             makeInstr(OPBLOCKCALL), #0007
-            makeInstr(OPJUMP, 26), #0008
+            makeInstr(OPJUMP, 29), #0008
             makeInstr(OPFALSE), #0011
-            makeInstr(OPJUMPNOTTRUE, 22), #0012
-            makeInstr(OPCONSTANT, 3),#0015
+            makeInstr(OPJUMPNOTTRUE, 24), #0012
+            makeInstr(OPCLOSURE, 3, 0),#0015
             makeInstr(OPBLOCKCALL), #0018
-            makeInstr(OPJUMP, 26), #0019
-            makeInstr(OPCONSTANT, 4), #0022
+            makeInstr(OPJUMP, 29), #0019
+            makeInstr(OPCLOSURE, 4, 0), #0022
             makeInstr(OPBLOCKCALL), #0025
             makeInstr(OPPOP), #0026
         ])
@@ -213,8 +214,8 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 1), #0006
             makeInstr(OPGETGLOBAL, 0), #0009
             makeInstr(OPGT), #0012
-            makeInstr(OPJUMPNOTTRUE, 24), #0013
-            makeInstr(OPCONSTANT, 3), #0016
+            makeInstr(OPJUMPNOTTRUE, 25), #0013
+            makeInstr(OPCLOSURE, 3, 0), #0016
             makeInstr(OPLOOPCALL, 0), #0019
             makeInstr(OPJUMP, 6), #0021
             makeInstr(OPGETGLOBAL, 0), #0024
@@ -247,8 +248,8 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPSETGLOBAL, 2),
             makeInstr(OPGETGLOBAL, 2), #0028 if <iter>.hasNext()
             makeInstr(OPITERHASNEXT),
-            makeInstr(OPJUMPNOTTRUE, 47),
-            makeInstr(OPCONSTANT, 4), #<for block>
+            makeInstr(OPJUMPNOTTRUE, 48),
+            makeInstr(OPCLOSURE, 4, 0), #<for block>
             makeInstr(OPGETGLOBAL, 2), #iter.next()
             makeInstr(OPITERNEXT),
             makeInstr(OPLOOPCALL, 1), #<for block>()

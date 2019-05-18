@@ -37,6 +37,9 @@ from .code import (
     OPITERHASNEXT,
     OPITERNEXT,
     OPGETBUILTIN,
+    OPCLOSURE,
+    OPGETFREE,
+    OPCURRENTCLOSURE,
     readUint16,
     readUint8,
 )
@@ -46,6 +49,7 @@ from .object import (
     newArray,
     newHash,
     newCompiledFunction,
+    newClosure,
     OBJECT_TYPES,
     TRUE,
     FALSE,
@@ -69,15 +73,16 @@ FRAME_TYPE_LOOP = "LOOP_FRAME"
 class BoaVMError(Exception): pass
 
 class Frame(object):
-    def __init__(self, frameType, compiledFunction, basePointer):
+    def __init__(self, frameType, cl, basePointer):
         self.frameType = frameType
-        self.compiledFunction = compiledFunction
+        #self.compiledFunction = compiledFunction
+        self.cl = cl
         self.ip = 0
         self.basePointer = basePointer
 
     @property
     def instr(self):
-        return self.compiledFunction.value
+        return self.cl.compiledFunction.value
 
 class VM(object):
     def __init__(self, bytecode):
@@ -88,7 +93,7 @@ class VM(object):
         self.frames = [None]*MAX_FRAMES #stack of Frames
         self.frameIndex = 0
 
-        mainFrame = Frame(FRAME_TYPE_BLOCK, newCompiledFunction(bytecode.instr), 0)
+        mainFrame = Frame(FRAME_TYPE_BLOCK, newClosure(newCompiledFunction(bytecode.instr), []), 0)
         self.pushFrame(mainFrame)
 
 
@@ -217,6 +222,11 @@ class VM(object):
                 builtinIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
                 self.push(getBuiltinByIndex(builtinIndex))
+            elif op == OPGETFREE:
+                freeIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(1)
+                currentClosure = self.currentFrame().cl
+                self.push(currentClosure.freeVariables[freeIndex])
             elif op == OPSETINDEX:
                 value = self.pop()
                 index = self.pop()
@@ -231,6 +241,14 @@ class VM(object):
                 condition = self.pop()
                 if not isTruthy(condition):
                     self.setCurrentFrameIp(pos - 1)
+            elif op == OPCLOSURE:
+                constIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                numFree = readUint8(self.currentInstr()[self.currentFrameIp()+3:])
+                self.incrCurrentFrameIp(3)
+                self.pushClosure(constIndex, numFree)
+            elif op == OPCURRENTCLOSURE:
+                currentClosure = self.currentFrame().cl
+                self.push(currentClosure)
             elif op == OPCALL:
                 numArgs = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
@@ -291,21 +309,28 @@ class VM(object):
             if incrFrameIp:
                 self.incrCurrentFrameIp(1)
 
+    def pushClosure(self, constIndex, numFree):
+        fn = self.constants[constIndex]
+        free = self.stack[self.sp-numFree:self.sp]
+        self.sp = self.sp - numFree
+        closure = newClosure(fn, free)
+        return self.push(closure)
+
     def executeCall(self, numArgs):
         callee = self.stack[self.sp-1-numArgs]
-        if callee.objectType == OBJECT_TYPES.OBJECT_TYPE_COMPILED_FUNCTION:
-            self.callFunction(callee, numArgs)
+        if callee.objectType == OBJECT_TYPES.OBJECT_TYPE_CLOSURE:
+            self.callClosure(callee, numArgs)
         elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
             self.callBuiltin(callee, numArgs)
         else:
             raise BoaVMError("Calling non-function/builtin")
 
-    def callFunction(self, fn, numArgs):
-        if numArgs != fn.numParameters:
-            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
-        frame = Frame(FRAME_TYPE_FUNCTION, fn, self.sp-numArgs)
+    def callClosure(self, cl, numArgs):
+        if numArgs != cl.compiledFunction.numParameters:
+            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, cl.compiledFunction.numParameters))
+        frame = Frame(FRAME_TYPE_FUNCTION, cl, self.sp-numArgs)
         self.pushFrame(frame)
-        self.sp = frame.basePointer + fn.numLocals
+        self.sp = frame.basePointer + cl.compiledFunction.numLocals
 
     def callBuiltin(self, fn, numArgs):
         args = self.stack[self.sp-numArgs:self.sp]
@@ -315,18 +340,18 @@ class VM(object):
         self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop
 
     def callBlock(self):
-        fn = self.stack[self.sp-1]
-        frame = Frame(FRAME_TYPE_BLOCK, fn, self.sp)
+        cl = self.stack[self.sp-1]
+        frame = Frame(FRAME_TYPE_BLOCK, cl, self.sp)
         self.pushFrame(frame)
-        self.sp = frame.basePointer + fn.numLocals
+        self.sp = frame.basePointer + cl.compiledFunction.numLocals
 
     def callLoop(self, numArgs):
-        fn = self.stack[self.sp-1-numArgs]
-        if numArgs != fn.numParameters:
-            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, fn.numParameters))
-        frame = Frame(FRAME_TYPE_LOOP, fn, self.sp-numArgs)
+        cl = self.stack[self.sp-1-numArgs]
+        if numArgs != cl.compiledFunction.numParameters:
+            raise BoaVMError("Wrong number of arguments: got %d, wanted %d" % (numArgs, cl.compiledFunction.numParameters))
+        frame = Frame(FRAME_TYPE_LOOP, cl, self.sp-numArgs)
         self.pushFrame(frame)
-        self.sp = frame.basePointer + fn.numLocals
+        self.sp = frame.basePointer + cl.compiledFunction.numLocals
 
     def buildArray(self, startIndex, endIndex):
         elements = self.stack[startIndex:endIndex]
