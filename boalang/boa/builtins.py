@@ -75,7 +75,7 @@ def builtin_push(args):
     return arrObj
 
 def builtin_pop(args):
-    if len(args) > 1:
+    if len(args) != 1:
         return newError("Wrong number of arguments to pop. Got %d, want 1" % len(args))
     arrObj = args[0]
 
@@ -92,6 +92,17 @@ def builtin_print(args):
     print(*argsStringified)
     return NULL
 
+def builtin_str(args):
+    if len(args) != 1:
+        return newError("Wrong number of arguments to str. Got %d, want 1" % len(args))
+    obj = args[0]
+
+    if obj.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING:
+        return newString(obj.value)
+
+    strVal = obj.inspect()
+    return newString(strVal)
+
 B_LEN = 'len'
 B_FIRST = 'first'
 B_LAST = 'last'
@@ -99,6 +110,7 @@ B_REST = 'rest'
 B_PUSH = 'push'
 B_POP = 'pop'
 B_PRINT = 'print'
+B_STR = 'str'
 
 BUILTIN_FUNCTIONS = {
     B_LEN: newBuiltinFunction(B_LEN, builtin_len),
@@ -108,6 +120,7 @@ BUILTIN_FUNCTIONS = {
     B_PUSH: newBuiltinFunction(B_PUSH, builtin_push),
     B_POP: newBuiltinFunction(B_POP, builtin_pop),
     B_PRINT: newBuiltinFunction(B_PRINT, builtin_print),
+    B_STR: newBuiltinFunction(B_STR, builtin_str),
 }
 
 BUILTIN_FUNCTION_LIST = [
@@ -118,6 +131,7 @@ BUILTIN_FUNCTION_LIST = [
     B_PUSH,
     B_POP,
     B_PRINT,
+    B_STR,
 ]
 
 def getBuiltinByIndex(index):
