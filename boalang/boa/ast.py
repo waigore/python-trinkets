@@ -26,6 +26,7 @@ EXPRESSION_TYPE_BOOLEAN = "BOOLEAN_EXPRESSION"
 EXPRESSION_TYPE_PREFIX = "PREFIX_EXPRESSION"
 EXPRESSION_TYPE_INFIX = "INFIX_EXPRESSION"
 EXPRESSION_TYPE_INDEX = "INDEX_EXPRESSION"
+EXPRESSION_TYPE_GET = "GET_EXPRESSION"
 EXPRESSION_TYPE_IF = "IF_EXPRESSION"
 EXPRESSION_TYPE_CALL = "CALL_EXPRESSION"
 
@@ -69,7 +70,7 @@ class AssignStatement(Statement):
         self.identifier = identifier
 
     def __repr__(self):
-        return '%s = %s;' % (self.identifier.value, self.value)
+        return '%s = %s;' % (self.identifier, self.value)
 
 class ReturnStatement(Statement):
     def __init__(self, token, value):
@@ -231,6 +232,15 @@ class InfixExpression(Expression):
 
     def __repr__(self):
         return '(%s %s %s)' % (self.left, self.operator, self.right)
+
+class GetExpression(Expression):
+    def __init__(self, token, object, property):
+        super(GetExpression, self).__init__(EXPRESSION_TYPE_GET, token)
+        self.object = object
+        self.property = property
+
+    def __repr__(self):
+        return '%s.%s' % (self.object, self.property)
 
 class IndexExpression(Expression):
     def __init__(self, token, left, index):

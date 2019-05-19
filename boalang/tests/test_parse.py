@@ -9,10 +9,12 @@ from boa.ast import (
     STATEMENT_TYPE_BLOCK,
     STATEMENT_TYPE_WHILE,
     STATEMENT_TYPE_FOR,
+    STATEMENT_TYPE_ASSIGN,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
+    EXPRESSION_TYPE_GET,
     EXPRESSION_TYPE_IF,
     EXPRESSION_TYPE_FUNC_LIT,
 )
@@ -33,6 +35,28 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(idents, ['five', 'ten', 'foobar'])
         self.assertEqual(valueTypes, [EXPRESSION_TYPE_INT_LIT, EXPRESSION_TYPE_INT_LIT, EXPRESSION_TYPE_IDENT])
         self.assertEqual(valueLiterals, [5, 10, "y"])
+
+    def parseAndCmpAssignPairs(self, assignPair):
+        code, expected = assignPair
+        p = Parser(code)
+        prog = p.parseProgram()
+        self.assertEqual(len(prog.statements), 1)
+
+        statement = prog.statements[0]
+        self.assertEqual(statement.statementType, STATEMENT_TYPE_ASSIGN)
+        self.assertEqual(str(statement), expected)
+
+    def test_assigns(self):
+        pairs = [
+            ("a = 1", "a = 1;"),
+            ("a.b = 1", "a.b = 1;"),
+            ("a.b.c = 1", "a.b.c = 1;"),
+            ("a.b[0].c = 1", "(a.b[0]).c = 1;"),
+            ("a().b[0].c = 1", "(a().b[0]).c = 1;"),
+            ("a(c() + d(a[0])).b[0].c = 1", "(a((c() + d((a[0])))).b[0]).c = 1;"),
+        ]
+        for pair in pairs:
+            self.parseAndCmpAssignPairs(pair)
 
     def test_returns(self):
         code = """return 1; return 5; return 999321; """

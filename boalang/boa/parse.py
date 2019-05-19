@@ -34,6 +34,7 @@ PRECEDENCE_MAP = DictLikeStruct({
     TOKEN_TYPES.TOKEN_TYPE_SLASH: PRODUCT,
     TOKEN_TYPES.TOKEN_TYPE_ASTERISK: PRODUCT,
     TOKEN_TYPES.TOKEN_TYPE_LPAREN: CALL,
+    TOKEN_TYPES.TOKEN_TYPE_PERIOD: INDEX,
     TOKEN_TYPES.TOKEN_TYPE_LBRACKET: INDEX,
 })
 
@@ -115,6 +116,7 @@ class Parser(object):
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_NOTIN, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_AND, self.parseInfixExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_OR, self.parseInfixExpression)
+        self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_PERIOD, self.parseGetExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LPAREN, self.parseCallExpression)
         self.registerInfix(TOKEN_TYPES.TOKEN_TYPE_LBRACKET, self.parseIndexExpression)
 
@@ -150,6 +152,10 @@ class Parser(object):
 
     def peekError(self, tokenType):
         msg = "Expected next token to be %s but got %s instead" % (tokenType, self.peekToken.tokenType)
+        self.errors.append(ParserError(msg))
+
+    def invalidAssignmentTargetError(self, expr):
+        msg = 'Expression cannot be used as target of assignment: %s' % expr
         self.errors.append(ParserError(msg))
 
     def noPrefixParseFnError(self, tokenType):
@@ -190,25 +196,33 @@ class Parser(object):
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_BREAK) or \
                 self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
             return self.parseLoopControlStatement()
-        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
-                (self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN) or \
-                self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET)):
+        #elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
+        #        (self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN) or \
+        #        self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET)):
+        else:
             assignStatement = self.parseAssignStatement()
             if assignStatement is None and len(self.errors) > len(snapshot.errors):
                 snapshot.restore()
                 return self.parseExpressionStatement()
             else:
                 return assignStatement
-        else:
-            return self.parseExpressionStatement()
+        #else:
+        #    return self.parseExpressionStatement()
 
     def parseAssignStatement(self):
-        identToken = self.curToken
-        ident = Identifier(identToken)
+        assignTarget = self.parseExpression(LOWEST)
+        if assignTarget is None:
+            return None
+        if assignTarget.expressionType not in [EXPRESSION_TYPE_IDENT, EXPRESSION_TYPE_GET, EXPRESSION_TYPE_INDEX]:
+            self.invalidAssignmentTargetError(assignTarget)
+            return None
 
-        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET):
-            self.nextToken()
-            ident = self.parseIndexExpression(ident)
+        #identToken = self.curToken
+        #ident = Identifier(identToken)
+
+        #if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET):
+        #    self.nextToken()
+        #    ident = self.parseIndexExpression(ident)
 
         if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_ASSIGN):
             return None
@@ -216,7 +230,9 @@ class Parser(object):
         self.nextToken()
 
         value = self.parseExpression(LOWEST)
-        statement = AssignStatement(identToken, ident, value)
+        if value is None:
+            return None
+        statement = AssignStatement('=', assignTarget, value)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
@@ -372,6 +388,14 @@ class Parser(object):
         self.nextToken()
         right = self.parseExpression(precedence)
         expr = InfixExpression(exprToken, left, right)
+        return expr
+
+    def parseGetExpression(self, obj):
+        getToken = self.curToken
+
+        self.nextToken()
+        property = self.parseExpression(INDEX)
+        expr = GetExpression(getToken, obj, property)
         return expr
 
     def parseCallExpression(self, function):

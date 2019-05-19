@@ -45,6 +45,7 @@ from .ast import (
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_INDEX,
+    EXPRESSION_TYPE_GET,
     EXPRESSION_TYPE_IF,
     EXPRESSION_TYPE_CALL,
 )
@@ -88,6 +89,8 @@ def boaEval(node, env=None):
                 return indexedAssignStatement(node, env)
             elif node.identifier.expressionType == EXPRESSION_TYPE_IDENT:
                 return assignStatement(node, env)
+            elif node.identifier.expressionType == EXPRESSION_TYPE_GET:
+                return propertyAssignStatement(node, env)
             else:
                 return newError("Identifier not valid: %s" % node.identifier)
     elif nodeType == NODE_TYPE_EXPRESSION:
@@ -125,11 +128,16 @@ def boaEval(node, env=None):
         elif exprType == EXPRESSION_TYPE_INDEX:
             leftEvaluated = boaEval(node.left, env)
             if isError(leftEvaluated):
-                return left
+                return leftEvaluated
             idxEvaluated = boaEval(node.index, env)
             if isError(idxEvaluated):
-                return idx
+                return idxEvaluated
             return evalIndexExpression(leftEvaluated, idxEvaluated)
+        elif exprType == EXPRESSION_TYPE_GET:
+            objEvaluated = boaEval(node.object, env)
+            if isError(objEvaluated):
+                return objEvaluated
+            return evalGetExpression(objEvaluated, node.property, env)
         elif exprType == EXPRESSION_TYPE_IF:
             return evalIfExpression(node, env)
         elif exprType == EXPRESSION_TYPE_FUNC_LIT:
@@ -191,27 +199,77 @@ def evalLoopBlockStatement(block, env): #returns true if loop execution should c
 
     return result, True
 
+def evalIndexedAssignment(left, idx, val, env):
+    try:
+        left[idx] = val
+        return NULL
+    except:
+        return newError("Could not assign value to subscript %s of %s" % (idx.inspect(), left.objectType))
+
+def evalAttributeAssignment(obj, attrName, val, env):
+    try:
+        obj.setAttribute(attrName, val)
+    except Exception as e:
+        return newError("Could not assign value to attribute %s of %s" % (attrName, obj.inspect()))
+
+def evalAttributeIndexAssignment(obj, left, idx, val, env):
+    if left.expressionType == EXPRESSION_TYPE_IDENT:
+        leftEvaluated = evalGetIdentExpression(obj, left, env)
+    elif left.expressionType == EXPRESSION_TYPE_INDEX:
+        leftEvaluated = evalGetIndexExpression(obj, left, env)
+    else:
+        return newError("Attribute index assignment not supported: %s.%s[%s]" % obj.inspect(), left, idx)
+    if isError(leftEvaluated):
+        return leftEvaluated
+
+    idxEvaluated = boaEval(idx, env)
+    if isError(idxEvaluated):
+        return idxEvaluated
+
+    return evalIndexedAssignment(leftEvaluated, idxEvaluated, val, env)
+
+def propertyAssignStatement(node, env):
+    setExpr = node.identifier
+    val = node.value
+    objEvaluated = boaEval(setExpr.object, env)
+    if isError(objEvaluated):
+        return objEvaluated
+
+    valEvaluated = boaEval(val, env)
+    if isError(valEvaluated):
+        return valEvaluated
+
+    return setExpressionAssignStatement(objEvaluated, setExpr.property, valEvaluated, env)
+
+
+def setExpressionAssignStatement(obj, property, val, env):
+    if property.expressionType == EXPRESSION_TYPE_IDENT:
+        return evalAttributeAssignment(obj, property.value, val, env)
+    elif property.expressionType == EXPRESSION_TYPE_INDEX:
+        return evalAttributeIndexAssignment(obj, property.left, property.index, val, env)
+    elif property.expressionType == EXPRESSION_TYPE_GET:
+        attrEvaluated = evalGetExpression(obj, property.object, env)
+        return setExpressionAssignStatement(attrEvaluated, property.property, val, env)
+    else:
+        return newError("Assignment not supported: %s" % property)
+
 def indexedAssignStatement(node, env):
-    ident = node.identifier.left
-    if not env.hasIdentifier(ident):
-        return newError("Identifier not declared: %s" % ident.value)
+    identEvaluated = boaEval(node.identifier.left, env)
+    if isError(identEvaluated):
+        return identEvaluated
 
     idxEvaluated = boaEval(node.identifier.index, env)
     if isError(idxEvaluated):
         return idxEvaluated
 
-    variable = env.getIdentifier(ident)
-    if not variable.objectType.isIterable:
+    if not identEvaluated.objectType.isIterable:
         return newError("Identifier not subscriptable: %s" % ident.value)
 
     val = boaEval(node.value, env)
     if isError(val):
         return val
 
-    try:
-        variable[idxEvaluated] = val
-    except:
-        return newError("Could not assign value to subscript %s of %s" % (idxEvaluated.inspect(), variable.objectType))
+    return evalIndexedAssignment(identEvaluated, idxEvaluated, val, env)
 
 def assignStatement(node, env):
     ident = node.identifier
@@ -314,6 +372,54 @@ def evalIndexExpression(left, index):
         return evalStringIndexExpression(left, index)
     else:
         return newError("Indexing not supported: %s[%s]" % (left.objectType, index.objectType))
+
+def evalGetExpression(objEvaluated, property, env):
+    if isError(objEvaluated):
+        return objEvaluated
+    if property.expressionType == EXPRESSION_TYPE_IDENT:
+        return evalGetIdentExpression(objEvaluated, property, env)
+    elif property.expressionType == EXPRESSION_TYPE_INDEX:
+        return evalGetIndexExpression(objEvaluated, property, env)
+    elif property.expressionType == EXPRESSION_TYPE_GET:
+        try:
+            attributeEvaluated = evalGetExpression(objEvaluated, property.object, env)
+            if isError(attributeEvaluated):
+                return attributeEvaluated
+            #nextIdent = property.object
+            #if nextIdent.expressionType == EXPRESSION_TYPE_IDENT:
+            #    attributeEvaluated = evalGetIdentExpression(objEvaluated, nextIdent, env)
+            #elif nextIdent.expressionType == EXPRESSION_TYPE_INDEX:
+            #    attributeEvaluated = evalGetIndexExpression(objEvaluated, nextIdent, env)
+        except Exception as e:
+            return newError("Could not get attribute %s.%s: %s" % (objEvaluated, nextIdent, e.message))
+        return evalGetExpression(attributeEvaluated, property.property, env)
+    else:
+        return newError("Property not gettable: %s.%s" % (objEvaluated, property))
+
+def evalGetIdentExpression(objEvaluated, property, env):
+    try:
+        return objEvaluated.getAttribute(property.value)
+    except Exception as e:
+        return newError("Could not get attribute: %s" % e.message)
+
+def evalGetIndexExpression(objEvaluated, property, env):
+    #if property.left.expressionType != EXPRESSION_TYPE_IDENT:
+    #    return newError("Attribute access not supported: %s.%s" % (obj, property.left))
+    try:
+        if property.left.expressionType == EXPRESSION_TYPE_IDENT:
+            leftEvaluated = evalGetIdentExpression(objEvaluated, property.left, env)
+        elif property.left.expressionType == EXPRESSION_TYPE_INDEX:
+            leftEvaluated = evalGetIndexExpression(objEvaluated, property.left, env)
+        else:
+            return newError("Property not gettable: %s.%s" % (objEvaluated, property))
+        if isError(leftEvaluated):
+            return leftEvaluated
+        idxEvaluated = boaEval(property.index, env)
+        if isError(idxEvaluated):
+            return idxEvaluated
+        return evalIndexExpression(leftEvaluated, idxEvaluated)
+    except Exception as e:
+        return newError("Could not get attribute: %s" % e.message)
 
 def evalArrayIndexExpression(left, index):
     arr = left.value

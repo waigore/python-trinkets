@@ -23,6 +23,10 @@ class NoSuchObjectTypeError(Exception): pass
 
 class ObjectInstantiationError(Exception): pass
 
+class CannotGetAttributeError(Exception): pass
+
+class CannotSetAttributeError(Exception): pass
+
 class BoaObjectType(object):
     def __init__(self, name, shortName, isHashable=False, isIterable=False):
         self.name = name
@@ -94,9 +98,27 @@ def newClosure(compiledFunction, freeVariables):
 class BoaObject(object):
     def __init__(self, typ):
         self.objectType = typ
+        self.attributeGetters = {}
+        self.attributeSetters = {}
 
     def inspect(self):
         pass
+
+    def defineAttribute(self, name, getter=None, setter=None):
+        if getter:
+            self.attributeGetters[name] = getter
+        if setter:
+            self.attributeSetters[name] = setter
+
+    def getAttribute(self, name):
+        if name not in self.attributeGetters:
+            raise CannotGetAttributeError(name)
+        return self.attributeGetters[name]()
+
+    def setAttribute(self, name, val):
+        if name not in self.attributeSetters:
+            raise CannotSetAttributeError(name)
+        return self.attributeSetters[name](val)
 
     def hashcode(self):
         return hash(self.value)
@@ -116,6 +138,7 @@ class BoaString(BoaObject):
     def __init__(self, value):
         super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
         self.value = value
+        self.defineAttribute('length', getter=lambda: newInteger(len(self.value)))
 
     def __iter__(self):
         return BoaCountingIterator(self)
@@ -250,6 +273,7 @@ class BoaArray(BoaObject):
     def __init__(self, elements):
         super(BoaArray, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ARRAY)
         self.value = elements
+        self.defineAttribute('length', getter=lambda: newInteger(len(self.value)))
 
     def __iter__(self):
         return BoaCountingIterator(self)
@@ -338,6 +362,7 @@ class BoaHash(BoaObject):
         for k, v in pairs:
             kHash = k.hashcode()
             self.value[kHash] = BoaHashPair(k, v)
+        self.defineAttribute('length', getter=lambda: newInteger(len(self.value.keys())))
 
     def __iter__(self):
         return BoaHashIterator(self)

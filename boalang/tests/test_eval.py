@@ -67,6 +67,11 @@ class TestEval(unittest.TestCase):
             ("'1' in '123'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
             ("'mon' + 'key' == 'monkey'", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
             ('"\\nmy\\rfair\\tlady\\b\\\\"', OBJECT_TYPES.OBJECT_TYPE_STRING, '\nmy\rfair\tlady\b\\'),
+            ("'monkey'.length", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
+            ("('mon' + 'key').length", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
+            ("[].length", OBJECT_TYPES.OBJECT_TYPE_INT, 0),
+            ("[1, 2, 3, 4, 5, 6].length", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
+            ("[[0], [1, 2]][1].length", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
         ]
 
         for code, expectedType, expectedValue in exprs:
