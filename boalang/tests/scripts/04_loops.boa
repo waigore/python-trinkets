@@ -1,0 +1,16 @@
+let a = 1;
+while (a < 10) {
+  a = a + 1;
+};
+
+let b = [1, 2, 3];
+let c = 0;
+for (i in b) {
+  c = c + i;
+};
+
+for (i in [0, 1, 2]) {
+  b[i] = b[i] * 2;
+}
+
+let i = 10;

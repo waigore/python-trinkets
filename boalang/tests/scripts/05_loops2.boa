@@ -1,0 +1,16 @@
+let containsChar = fn(s, c) {
+  let i = 0;
+  while (i < len(s)) {
+    let ch = s[i];
+    if (ch == c) {
+      return true;
+    }
+    i = i + 1;
+  }
+
+  return false;
+}
+
+let a = containsChar('50', '5');
+let b = containsChar('AbcDef', 'd');
+let c = containsChar('YY X', 'X');

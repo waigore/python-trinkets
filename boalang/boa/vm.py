@@ -39,6 +39,8 @@ from .code import (
     OPGETBUILTIN,
     OPCLOSURE,
     OPGETFREE,
+    OPGETBLOCK,
+    OPSETBLOCK,
     OPCURRENTCLOSURE,
     readUint16,
     readUint8,
@@ -85,23 +87,27 @@ class Frame(object):
         return self.cl.compiledFunction.value
 
 class VM(object):
-    def __init__(self, bytecode):
+    def __init__(self, bytecode, symbolTable=None):
         self.constants = bytecode.constants
         self.stack = [None]*STACK_SIZE #stack of BoaObjects
         self.globals = [None]*GLOBALS_SIZE
         self.sp = 0
         self.frames = [None]*MAX_FRAMES #stack of Frames
         self.frameIndex = 0
+        self.globalSymbolTable = symbolTable
 
         mainFrame = Frame(FRAME_TYPE_BLOCK, newClosure(newCompiledFunction(bytecode.instr), []), 0)
         self.pushFrame(mainFrame)
-
 
     @staticmethod
     def newWithGlobalsStore(bytecode, globals):
         vm = VM(bytecode)
         vm.globals = globals
         return vm
+
+    def getGlobal(self, identifier):
+        symbol = self.globalSymbolTable.resolve(identifier)
+        return self.globals[symbol.index]
 
     def currentFrame(self):
         return self.frames[self.frameIndex - 1]
@@ -272,6 +278,16 @@ class VM(object):
                 self.incrCurrentFrameIp(1)
                 frame = self.currentFrame()
                 self.push(self.stack[frame.basePointer+localIndex])
+            elif op == OPSETBLOCK:
+                scopeDiff = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                localIndex = readUint16(self.currentInstr()[self.currentFrameIp()+3:])
+                self.incrCurrentFrameIp(4)
+                self.stack[self.frames[self.frameIndex-1-scopeDiff].basePointer + localIndex] = self.pop()
+            elif op == OPGETBLOCK:
+                scopeDiff = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                localIndex = readUint16(self.currentInstr()[self.currentFrameIp()+3:])
+                self.incrCurrentFrameIp(4)
+                self.push(self.stack[self.frames[self.frameIndex-1-scopeDiff].basePointer + localIndex])
             elif op == OPITER:
                 iterable = self.pop()
                 iterator = iter(iterable)
@@ -369,10 +385,19 @@ class VM(object):
         if left.objectType == OBJECT_TYPES.OBJECT_TYPE_ARRAY and \
                 index.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
             return self.executeArrayIndexOperation(left, index)
+        elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_STRING and \
+                index.objectType == OBJECT_TYPES.OBJECT_TYPE_INT:
+            return self.executeStringIndexOperation(left, index)
         elif left.objectType == OBJECT_TYPES.OBJECT_TYPE_HASH:
             return self.executeHashIndexOperation(left, index)
         else:
             raise BoaVMError("Unsupported for index operation: %s,%s" % (left.objectType, index.objectType))
+
+    def executeStringIndexOperation(self, left, index):
+        try:
+            self.push(left[index])
+        except:
+            raise BoaVMError("Array index error: %d" % index.inspect())
 
     def executeArrayIndexOperation(self, left, index):
         try:

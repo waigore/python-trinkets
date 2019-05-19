@@ -76,6 +76,8 @@ from .code import (
     OPCLOSURE,
     OPGETFREE,
     OPCURRENTCLOSURE,
+    OPGETBLOCK,
+    OPSETBLOCK,
 )
 from .symbol import (
     SymbolTable,
@@ -85,6 +87,7 @@ from .symbol import (
     BUILTIN_SCOPE,
     FREE_SCOPE,
     FUNCTION_SCOPE,
+    BLOCK_SCOPE,
 )
 from .builtins import (
     BUILTIN_FUNCTION_LIST,
@@ -139,8 +142,20 @@ class Compiler(object):
             self.emit(OPGETFREE, s.index)
         elif s.scope == FUNCTION_SCOPE:
             self.emit(OPCURRENTCLOSURE)
+        elif s.scope == BLOCK_SCOPE:
+            self.emit(OPGETBLOCK, s.scopeDiff, s.index)
         else:
             self.emit(OPGETBUILTIN, s.index)
+
+    def assignSymbol(self, s):
+        if s.scope == GLOBAL_SCOPE:
+            self.emit(OPSETGLOBAL, s.index)
+        elif s.scope == LOCAL_SCOPE:
+            self.emit(OPSETLOCAL, s.index)
+        elif s.scope == BLOCK_SCOPE:
+            self.emit(OPSETBLOCK, s.scopeDiff, s.index)
+        else:
+            raise BoaCompilerError("Cannot assign symbol at current scope: %s" % s.name)
 
     def compile(self, node):
         nodeType = node.nodeType
@@ -158,10 +173,11 @@ class Compiler(object):
             elif stmtType == STATEMENT_TYPE_LET:
                 symbol = self.symbolTable.define(node.identifier.value)
                 self.compile(node.value)
-                if symbol.scope == GLOBAL_SCOPE:
-                    self.emit(OPSETGLOBAL, symbol.index)
-                else:
-                    self.emit(OPSETLOCAL, symbol.index)
+                self.assignSymbol(symbol)
+                #if symbol.scope == GLOBAL_SCOPE:
+                #    self.emit(OPSETGLOBAL, symbol.index)
+                #else:
+                #    self.emit(OPSETLOCAL, symbol.index)
             elif stmtType == STATEMENT_TYPE_ASSIGN:
                 if node.identifier.expressionType == EXPRESSION_TYPE_INDEX:
                     self.compile(node.identifier.left)
@@ -174,18 +190,20 @@ class Compiler(object):
                         symbol = self.symbolTable.resolve(node.identifier.value)
                     except SymbolNotFoundError as e:
                         raise BoaCompilerError("Identifier not defined: %s" % node.value)
-                    if symbol.scope == GLOBAL_SCOPE:
-                        self.emit(OPSETGLOBAL, symbol.index)
-                    else:
-                        self.emit(OPSETLOCAL, symbol.index)
+                    self.assignSymbol(symbol)
+                    #if symbol.scope == GLOBAL_SCOPE:
+                    #    self.emit(OPSETGLOBAL, symbol.index)
+                    #else:
+                    #    self.emit(OPSETLOCAL, symbol.index)
             elif stmtType == STATEMENT_TYPE_FOR:
                 self.compile(node.iterable)
                 self.emit(OPITER)
                 tmpIteratorSymbol = self.symbolTable.define("__temp__%02d" % self.symbolTable.numDefinitions)
-                if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
-                    self.emit(OPSETGLOBAL, tmpIteratorSymbol.index)
-                else:
-                    self.emit(OPSETLOCAL, tmpIteratorSymbol.index)
+                self.assignSymbol(tmpIteratorSymbol)
+                #if tmpIteratorSymbol.scope == GLOBAL_SCOPE:
+                #    self.emit(OPSETGLOBAL, tmpIteratorSymbol.index)
+                #else:
+                #    self.emit(OPSETLOCAL, tmpIteratorSymbol.index)
 
                 startPos = self.getInstrBytecodePos(len(self.currentInstructions()))
 
@@ -290,7 +308,7 @@ class Compiler(object):
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_FUNC_LIT:
-                self.enterScope()
+                self.enterScope(isFunction=True)
                 if node.name is not None:
                     self.symbolTable.defineFunctionName(node.name)
                 for param in node.parameters:
@@ -444,10 +462,10 @@ class Compiler(object):
                 else:
                     raise BoaCompilerError("Unknown infix operator: %s" % node.operator)
 
-    def enterScope(self):
+    def enterScope(self, isFunction=False):
         newScope = CompilationScope([], None, None)
         currST = self.symbolTable
-        self.symbolTable = SymbolTable(outer=currST)
+        self.symbolTable = SymbolTable(outer=currST, isFunction=isFunction)
         self.scopes.append(newScope)
         self.scopeIndex += 1
 

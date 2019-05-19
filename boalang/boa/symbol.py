@@ -3,22 +3,25 @@ GLOBAL_SCOPE = "GLOBAL_SCOPE"
 LOCAL_SCOPE = "LOCAL_SCOPE"
 BUILTIN_SCOPE = "BUILTIN_SCOPE"
 FREE_SCOPE = "FREE_SCOPE"
+BLOCK_SCOPE = "BLOCK_SCOPE"
 FUNCTION_SCOPE = "FUNCTION_SCOPE"
 
 class SymbolNotFoundError(Exception): pass
 
 class Symbol(object):
-    def __init__(self, name, scope, index):
+    def __init__(self, name, scope, index, scopeDiff=0):
         self.name = name
         self.scope = scope #String denoting the scope name
+        self.scopeDiff = scopeDiff
         self.index = index
 
 class SymbolTable(object):
-    def __init__(self, outer=None):
+    def __init__(self, outer=None, isFunction=False):
         self.store = {} #maps strings to Symbols
         self.freeSymbols = [] #list of Symbols
         self.numDefinitions = 0
         self.outer = outer #Enclosing SymbolTable
+        self.isFunction = isFunction
 
     def define(self, name): #accepts string, returns Symbols
         symbol = Symbol(name, GLOBAL_SCOPE, self.numDefinitions)
@@ -45,15 +48,26 @@ class SymbolTable(object):
         self.store[name] = symbol
         return symbol
 
+    def innerResolve(self, name, scopeDiff, fnScopeInbtwn):
+        if name in self.store:
+            return self, self.store[name], scopeDiff, False
+        if self.outer is None:
+            raise SymbolNotFoundError(name)
+        scope, sym, sd, isF = self.outer.innerResolve(name, scopeDiff+1, self.isFunction or fnScopeInbtwn)
+        if sym.scope in [GLOBAL_SCOPE, BUILTIN_SCOPE]:
+            return scope, sym, sd, isF
+        elif sym.scope == LOCAL_SCOPE:
+            if not self.isFunction and not fnScopeInbtwn:
+                blockSymbol = Symbol(name, BLOCK_SCOPE, sym.index, sd)
+                return scope, blockSymbol, sd, isF
+        elif sym.scope == BLOCK_SCOPE:
+            if not self.isFunction and not fnScopeInbtwn:
+                blockSymbol.scopeDiff = sd
+                return scope, blockSymbol, sd, isF
+
+        sym = self.defineFree(sym)
+        return scope, sym, sd, isF
+
     def resolve(self, name):
-        try:
-            return self.store[name]
-        except:
-            if self.outer is not None:
-                sym = self.outer.resolve(name)
-                if sym.scope in [GLOBAL_SCOPE, BUILTIN_SCOPE]:
-                    return sym
-                free = self.defineFree(sym)
-                return free
-            else:
-                raise SymbolNotFoundError(name)
+        scope, symbol, scopeDiff, fnScopeInbtwn = self.innerResolve(name, 0, self.isFunction)
+        return symbol

@@ -20,6 +20,15 @@ class Environment(object):
         env = Environment(outer=self)
         return env
 
+    def getGlobal(self, identName):
+        if not identName not in self.store and self.outer is not None:
+            return self.outer.getGlobal(identName)
+        try:
+            val = self.store[identName]
+        except:
+            raise BoaEnvError('Identifier not declared: %s' % (str(identName)))
+        return val
+
     def getIdentifier(self, ident):
         if ident.expressionType != EXPRESSION_TYPE_IDENT:
             raise BoaEvalError('Node not identifier: %s' % (str(ident)))

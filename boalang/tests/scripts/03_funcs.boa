@@ -1,0 +1,10 @@
+let g = 10;
+let s = fn(a, b){
+ let c = a+b;
+ c + g;
+};
+let outer = fn() {
+  s(1, 2)+ s(3, 4)+g;
+};
+
+let f = outer()+g;

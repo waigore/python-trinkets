@@ -1,0 +1,27 @@
+
+let a = fn(x, y, z) {
+  let b = fn(y, z) {
+    let c = fn(z) {
+      x+y+z
+    }
+    c(z)
+  }
+  b(y, z)
+}
+
+let val = a(1, 2, 3);
+
+let x = fn(i) {
+  if (i > 6) {
+    return fn(j) { j * i }
+  }
+  else {
+    return fn(j) { j + i }
+  }
+}
+
+let x1 = x(6)
+let x2 = x(7)
+
+let val2 = x1(5)
+let val3 = x2(4)

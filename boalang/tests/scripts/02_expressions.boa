@@ -1,0 +1,12 @@
+let a = (1 + 2) * (3 - 4);
+let b = !(if (false) { 5 });
+
+let monkey = "mon" + "key";
+
+let arr = [1+2, 3-4, 5*6];
+
+let g = 50;
+let m = fn() {let n = 1; g-n};
+let m2 = fn() { let n = 2; g-n};
+
+let m3 = m()+m2();
