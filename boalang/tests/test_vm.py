@@ -210,6 +210,13 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'len([1, 2, 3])')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')
 
+    def test_attributes(self):
+        helper = VMHelper(self, '[1, 2, 3].length == "123".length')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')
+
+        helper = VMHelper(self, 'let a = ["one", "two", "three", "four"]; a[0].length')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '3')
+
     def test_closures(self):
         helper = VMHelper(self, 'let newAdder = fn(a, b) { fn(c) {a + b + c};} let a = newAdder(1, 2); a(8)')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '11')

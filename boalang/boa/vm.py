@@ -42,6 +42,8 @@ from .code import (
     OPGETBLOCK,
     OPSETBLOCK,
     OPCURRENTCLOSURE,
+    OPGETATTR,
+    OPSETATTR,
     readUint16,
     readUint8,
 )
@@ -214,6 +216,16 @@ class VM(object):
                 index = self.pop()
                 left = self.pop()
                 self.executeIndexOperation(left, index)
+            elif op == OPGETATTR:
+                attrName = self.pop()
+                obj = self.pop()
+                val = obj.getAttribute(attrName.value)
+                self.push(val)
+            elif op == OPSETATTR:
+                val = self.pop()
+                attrName = self.pop()
+                obj = self.pop()
+                obj.setAttribute(attrName.value, val)
             elif op == OPPOP:
                 self.pop()
             elif op == OPSETGLOBAL:

@@ -23,6 +23,7 @@ from .ast import (
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INDEX,
+    EXPRESSION_TYPE_GET,
     EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_IF,
     EXPRESSION_TYPE_CALL,
@@ -78,6 +79,8 @@ from .code import (
     OPCURRENTCLOSURE,
     OPGETBLOCK,
     OPSETBLOCK,
+    OPGETATTR,
+    OPSETATTR,
 )
 from .symbol import (
     SymbolTable,
@@ -184,6 +187,9 @@ class Compiler(object):
                     self.compile(node.identifier.index)
                     self.compile(node.value)
                     self.emit(OPSETINDEX)
+                elif node.identifier.expressionType == EXPRESSION_TYPE_GET:
+                    self.compile(node.identifier.object)
+                    self.compileSetProperty(node.identfier.property, node.value)
                 else:
                     self.compile(node.value)
                     try:
@@ -352,6 +358,9 @@ class Compiler(object):
                 self.compile(node.left)
                 self.compile(node.index)
                 self.emit(OPINDEX)
+            elif exprType == EXPRESSION_TYPE_GET:
+                self.compile(node.object)
+                self.compileGetProperty(node.property)
             elif exprType == EXPRESSION_TYPE_IF:
                 jumpPositions = []
                 for i, conditionalBlock in enumerate(node.conditionalBlocks):
@@ -461,6 +470,65 @@ class Compiler(object):
                     self.emit(OPGTEQ)
                 else:
                     raise BoaCompilerError("Unknown infix operator: %s" % node.operator)
+
+    def compileSetProperty(self, property, val):
+        if property.expressionType == EXPRESSION_TYPE_IDENT:
+            self.compileSetIdentProperty(property, val)
+        elif property.expressionType == EXPRESSION_TYPE_INDEX:
+            self.compileSetIndexProperty(property, val)
+        elif property.expressionType == EXPRESSION_TYPE_GET:
+            self.compileGetProperty(property.object)
+            self.compileSetProperty(property.property, val)
+        else:
+            raise BoaCompilerError("Property not settable: %s" % (property))
+
+    def compileSetIdentProperty(self, property, val):
+        attributeName = newString(property.value)
+        self.emit(OPCONSTANT, self.addConstant(attributeName))
+        self.compile(val)
+        self.emit(OPSETATTR)
+
+    def compileSetIndexProperty(self, property, val):
+        if property.left.expressionType == EXPRESSION_TYPE_IDENT:
+            self.compileGetIdentProperty(property.left)
+        elif property.left.expressionType == EXPRESSION_TYPE_INDEX:
+            self.compileGetIndexProperty(property.left)
+        else:
+            raise BoaCompilerError("Property not settable: %s" % (property))
+        self.compile(property.index)
+        self.compile(val)
+        self.emit(OPSETINDEX)
+
+    def compileGetProperty(self, property):
+        if property.expressionType == EXPRESSION_TYPE_IDENT:
+            self.compileGetIdentProperty(property)
+            return
+        elif property.expressionType == EXPRESSION_TYPE_INDEX:
+            self.compileGetIndexProperty(property)
+            return
+        elif property.expressionType == EXPRESSION_TYPE_GET:
+            self.compileGetProperty(property.object)
+            self.compileGetProperty(property.property)
+            return
+        else:
+            raise BoaCompilerError("Property not gettable: %s.%s" % (object, property))
+
+    def compileGetIdentProperty(self, property):
+        attributeName = newString(property.value)
+        self.emit(OPCONSTANT, self.addConstant(attributeName))
+        self.emit(OPGETATTR)
+
+    def compileGetIndexProperty(self, property):
+        if property.left.expressionType == EXPRESSION_TYPE_IDENT:
+            self.compileGetIdentProperty(property.left)
+        elif property.left.expressionType == EXPRESSION_TYPE_INDEX:
+            self.compileGetIndexProperty(property.left)
+        elif property.left.expressionType == EXPRESSION_TYPE_GET:
+            self.compileGetProperty(property.left)
+        else:
+            raise BoaCompilerError("Property not gettable: %s" % (property))
+        self.compile(property.index)
+        self.emit(OPINDEX)
 
     def enterScope(self, isFunction=False):
         newScope = CompilationScope([], None, None)

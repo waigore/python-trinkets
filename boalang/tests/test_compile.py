@@ -34,6 +34,8 @@ from boa.code import (
     OPITERNEXT,
     OPITERHASNEXT,
     OPCLOSURE,
+    OPGETATTR,
+    OPSETATTR,
     makeInstr,
     formatInstrs,
 )
@@ -353,6 +355,43 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 6),
             makeInstr(OPINDEX),
             makeInstr(OPPOP), #0012
+        ])
+
+    def test_attributes(self):
+        helper = CompileHelper(self, 'let a = "abc"; a.length')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPSETGLOBAL, 0),
+            makeInstr(OPGETGLOBAL, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPGETATTR),
+            makeInstr(OPPOP),
+        ])
+
+        helper = CompileHelper(self, 'let a = "abc"; a.length.length')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPSETGLOBAL, 0),
+            makeInstr(OPGETGLOBAL, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPGETATTR),
+            makeInstr(OPCONSTANT, 2),
+            makeInstr(OPGETATTR),
+            makeInstr(OPPOP),
+        ])
+
+        helper = CompileHelper(self, 'let a = "abc"; a[0].length[0]')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPSETGLOBAL, 0),
+            makeInstr(OPGETGLOBAL, 0),
+            makeInstr(OPCONSTANT, 1),
+            makeInstr(OPINDEX),
+            makeInstr(OPCONSTANT, 2),
+            makeInstr(OPGETATTR),
+            makeInstr(OPCONSTANT, 3),
+            makeInstr(OPINDEX),
+            makeInstr(OPPOP),
         ])
 
     def test_functions(self):

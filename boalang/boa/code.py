@@ -47,6 +47,8 @@ OPGETFREE = b'\x2A'
 OPCURRENTCLOSURE = b'\x2B'
 OPGETBLOCK = b'\x2C'
 OPSETBLOCK = b'\x2D'
+OPGETATTR = b'\x2E'
+OPSETATTR = b'\x2F'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -101,6 +103,8 @@ DEFINITIONS = DictLikeStruct({
     OPCURRENTCLOSURE: Definition("OpCurrentClosure", []),
     OPGETBLOCK: Definition("OpGetBlock", [2, 2]),
     OPSETBLOCK: Definition("OpSetBlock", [2, 2]),
+    OPGETATTR: Definition("OpGetAttr", []),
+    OPSETATTR: Definition("OpSetAttr", []),
 })
 
 def lookupOpcode(b):
