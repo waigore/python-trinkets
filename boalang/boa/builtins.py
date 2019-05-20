@@ -5,7 +5,9 @@ from .object import (
     newInteger,
     newArray,
     newString,
+    BoaObject,
     OBJECT_TYPES,
+    OBJECT_TYPE_OBJECT,
     NULL,
 )
 
@@ -103,6 +105,11 @@ def builtin_str(args):
     strVal = obj.inspect()
     return newString(strVal)
 
+def builtin_object(args):
+    if len(args) != 0:
+        return newError("Wrong number of arguments to str. Got %d, want 0" % len(args))
+    return BoaObject(OBJECT_TYPE_OBJECT)
+
 B_LEN = 'len'
 B_FIRST = 'first'
 B_LAST = 'last'
@@ -111,6 +118,7 @@ B_PUSH = 'push'
 B_POP = 'pop'
 B_PRINT = 'print'
 B_STR = 'str'
+B_OBJECT = 'object'
 
 BUILTIN_FUNCTIONS = {
     B_LEN: newBuiltinFunction(B_LEN, builtin_len),
@@ -121,6 +129,7 @@ BUILTIN_FUNCTIONS = {
     B_POP: newBuiltinFunction(B_POP, builtin_pop),
     B_PRINT: newBuiltinFunction(B_PRINT, builtin_print),
     B_STR: newBuiltinFunction(B_STR, builtin_str),
+    B_OBJECT: newBuiltinFunction(B_OBJECT, builtin_object),
 }
 
 BUILTIN_FUNCTION_LIST = [
@@ -132,6 +141,7 @@ BUILTIN_FUNCTION_LIST = [
     B_POP,
     B_PRINT,
     B_STR,
+    B_OBJECT,
 ]
 
 def getBuiltinByIndex(index):

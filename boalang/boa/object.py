@@ -1,6 +1,7 @@
 
 from .util import DictLikeStruct
 
+OBJECT_TYPE_OBJECT = 'OBJECT_TYPE_OBJECT'
 OBJECT_TYPE_INT = 'OBJECT_TYPE_INT'
 OBJECT_TYPE_BOOLEAN = 'OBJECT_TYPE_BOOLEAN'
 OBJECT_TYPE_STRING = 'OBJECT_TYPE_STRING'
@@ -38,6 +39,7 @@ class BoaObjectType(object):
         return '[%s]' % self.shortName
 
 OBJECT_TYPES = DictLikeStruct({
+    OBJECT_TYPE_OBJECT: BoaObjectType(OBJECT_TYPE_OBJECT, "object"),
     OBJECT_TYPE_INT: BoaObjectType(OBJECT_TYPE_INT, "int", isHashable=True),
     OBJECT_TYPE_BOOLEAN: BoaObjectType(OBJECT_TYPE_BOOLEAN, "boolean", isHashable=True),
     OBJECT_TYPE_STRING: BoaObjectType(OBJECT_TYPE_STRING, "string", isHashable=True, isIterable=True),
@@ -98,27 +100,40 @@ def newClosure(compiledFunction, freeVariables):
 class BoaObject(object):
     def __init__(self, typ):
         self.objectType = typ
-        self.attributeGetters = {}
-        self.attributeSetters = {}
+        self.builtinAttributeGetters = {}
+        self.builtinAttributeSetters = {}
+        self.attributes = {}
 
     def inspect(self):
-        pass
+        return '<BoaObject typ=%s>' % (self.objectType)
 
-    def defineAttribute(self, name, getter=None, setter=None):
+    def __repr__(self):
+        return '<BoaObject typ=%s>' % (self.objectType)
+
+    def defineBuiltinAttribute(self, name, getter=None, setter=None):
         if getter:
-            self.attributeGetters[name] = getter
+            self.builtinAttributeGetters[name] = getter
         if setter:
-            self.attributeSetters[name] = setter
+            self.builtinAttributeSetters[name] = setter
+
+    def defineAttribute(self, name, val):
+        self.attributes[name] = val
 
     def getAttribute(self, name):
-        if name not in self.attributeGetters:
-            raise CannotGetAttributeError(name)
-        return self.attributeGetters[name]()
+        if name in self.attributes:
+            return self.attributes[name]
+        elif name in self.builtinAttributeGetters:
+            return self.builtinAttributeGetters[name]()
+        raise CannotGetAttributeError(name)
 
     def setAttribute(self, name, val):
-        if name not in self.attributeSetters:
-            raise CannotSetAttributeError(name)
-        return self.attributeSetters[name](val)
+        if name in self.attributes:
+            self.attributes[name] = val
+        elif name in self.builtinAttributeSetters:
+            return self.builtinAttributeSetters[name](val)
+        else:
+            self.defineAttribute(name, val)
+
 
     def hashcode(self):
         return hash(self.value)
@@ -138,7 +153,7 @@ class BoaString(BoaObject):
     def __init__(self, value):
         super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
         self.value = value
-        self.defineAttribute('length', getter=lambda: newInteger(len(self.value)))
+        self.defineBuiltinAttribute('length', getter=lambda: newInteger(len(self.value)))
 
     def __iter__(self):
         return BoaCountingIterator(self)
@@ -273,7 +288,7 @@ class BoaArray(BoaObject):
     def __init__(self, elements):
         super(BoaArray, self).__init__(OBJECT_TYPES.OBJECT_TYPE_ARRAY)
         self.value = elements
-        self.defineAttribute('length', getter=lambda: newInteger(len(self.value)))
+        self.defineBuiltinAttribute('length', getter=lambda: newInteger(len(self.value)))
 
     def __iter__(self):
         return BoaCountingIterator(self)
@@ -362,7 +377,7 @@ class BoaHash(BoaObject):
         for k, v in pairs:
             kHash = k.hashcode()
             self.value[kHash] = BoaHashPair(k, v)
-        self.defineAttribute('length', getter=lambda: newInteger(len(self.value.keys())))
+        self.defineBuiltinAttribute('length', getter=lambda: newInteger(len(self.value.keys())))
 
     def __iter__(self):
         return BoaHashIterator(self)
@@ -422,6 +437,7 @@ BREAK = BoaBreak()
 CONTINUE = BoaContinue()
 
 OBJECT_CONSTRUCTORS = DictLikeStruct({
+    OBJECT_TYPE_OBJECT: BoaObject,
     OBJECT_TYPE_INT: BoaInteger,
     OBJECT_TYPE_RETURN_VALUE: BoaReturnValue,
     OBJECT_TYPE_ERROR: BoaError,

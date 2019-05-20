@@ -189,7 +189,7 @@ class Compiler(object):
                     self.emit(OPSETINDEX)
                 elif node.identifier.expressionType == EXPRESSION_TYPE_GET:
                     self.compile(node.identifier.object)
-                    self.compileSetProperty(node.identfier.property, node.value)
+                    self.compileSetProperty(node.identifier.property, node.value)
                 else:
                     self.compile(node.value)
                     try:
