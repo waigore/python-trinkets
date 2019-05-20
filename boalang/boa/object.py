@@ -15,6 +15,7 @@ OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
 OBJECT_TYPE_CLOSURE = 'OBJECT_TYPE_CLOSURE'
 OBJECT_TYPE_COMPILED_FUNCTION = 'OBJECT_TYPE_COMPILED_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
+OBJECT_TYPE_BUILTIN_METHOD = 'OBJECT_TYPE_BUILTIN_METHOD'
 OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
 OBJECT_TYPE_CONTINUE = 'OBJECT_TYPE_CONTINUE'
 OBJECT_TYPE_BREAK = 'OBJECT_TYPE_BREAK'
@@ -56,6 +57,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
     OBJECT_TYPE_COMPILED_FUNCTION: BoaObjectType(OBJECT_TYPE_COMPILED_FUNCTION, "compiledFunction"),
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
+    OBJECT_TYPE_BUILTIN_METHOD: BoaObjectType(OBJECT_TYPE_BUILTIN_METHOD, "builtinMethod"),
     OBJECT_TYPE_CLOSURE: BoaObjectType(OBJECT_TYPE_CLOSURE, "closure"),
 })
 
@@ -116,6 +118,10 @@ class BoaObject(object):
         if setter:
             self.builtinAttributeSetters[name] = setter
 
+    def defineBuiltinMethod(self, name, func):
+        builtinMethod = BoaBuiltinMethod(name, self, func)
+        self.defineBuiltinAttribute(name, getter=lambda: builtinMethod)
+
     def defineAttribute(self, name, val):
         self.attributes[name] = val
 
@@ -154,6 +160,18 @@ class BoaString(BoaObject):
         super(BoaString, self).__init__(OBJECT_TYPES.OBJECT_TYPE_STRING)
         self.value = value
         self.defineBuiltinAttribute('length', getter=lambda: newInteger(len(self.value)))
+        self.defineBuiltinMethod('toUpper', self.method_toUpper)
+        self.defineBuiltinMethod('toLower', self.method_toLower)
+
+    def method_toUpper(self, args):
+        if len(args) > 0:
+            return newError("Wrong number of arguments to <string>.toUpper: got %d, want 0" % (len(args)))
+        return newString(self.value.upper())
+
+    def method_toLower(self, args):
+        if len(args) > 0:
+            return newError("Wrong number of arguments to <string>.toLower: got %d, want 0" % (len(args)))
+        return newString(self.value.lower())
 
     def __iter__(self):
         return BoaCountingIterator(self)
@@ -257,6 +275,21 @@ class BoaClosure(BoaObject):
             self.compiledFunction, ', '.join([free.inspect() for free in self.freeVariables])
         )
 
+class BoaBuiltinMethod(BoaObject):
+    def __init__(self, name, instance, func):
+        super(BoaBuiltinMethod, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD)
+        self.name = name
+        self.instance = instance
+        self.func = func
+
+    def call(self, *args):
+        return self.func(*args)
+
+    def __repr__(self):
+        return '<builtinMethod %s of %s (bound)>' % (self.name, self.instance.objectType)
+
+    def inspect(self):
+        return '<builtinMethod %s of %s (bound)>' % (self.name, self.instance.objectType)
 
 class BoaCompiledFunction(BoaObject):
     def __init__(self, instr, numLocals, numParameters):

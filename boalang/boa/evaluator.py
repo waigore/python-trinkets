@@ -380,6 +380,8 @@ def evalGetExpression(objEvaluated, property, env):
         return evalGetIdentExpression(objEvaluated, property, env)
     elif property.expressionType == EXPRESSION_TYPE_INDEX:
         return evalGetIndexExpression(objEvaluated, property, env)
+    elif property.expressionType == EXPRESSION_TYPE_CALL:
+        return evalGetCallExpression(objEvaluated, property, env)
     elif property.expressionType == EXPRESSION_TYPE_GET:
         try:
             attributeEvaluated = evalGetExpression(objEvaluated, property.object, env)
@@ -406,18 +408,35 @@ def evalGetIndexExpression(objEvaluated, property, env):
     #if property.left.expressionType != EXPRESSION_TYPE_IDENT:
     #    return newError("Attribute access not supported: %s.%s" % (obj, property.left))
     try:
-        if property.left.expressionType == EXPRESSION_TYPE_IDENT:
-            leftEvaluated = evalGetIdentExpression(objEvaluated, property.left, env)
-        elif property.left.expressionType == EXPRESSION_TYPE_INDEX:
-            leftEvaluated = evalGetIndexExpression(objEvaluated, property.left, env)
-        else:
-            return newError("Property not gettable: %s.%s" % (objEvaluated, property))
+        #if property.left.expressionType == EXPRESSION_TYPE_IDENT:
+        #    leftEvaluated = evalGetIdentExpression(objEvaluated, property.left, env)
+        #elif property.left.expressionType == EXPRESSION_TYPE_INDEX:
+        #    leftEvaluated = evalGetIndexExpression(objEvaluated, property.left, env)
+        leftEvaluated = evalGetExpression(objEvaluated, property.left, env)
+        #else:
+        #    return newError("Property not gettable: %s.%s" % (objEvaluated, property))
         if isError(leftEvaluated):
             return leftEvaluated
         idxEvaluated = boaEval(property.index, env)
         if isError(idxEvaluated):
             return idxEvaluated
         return evalIndexExpression(leftEvaluated, idxEvaluated)
+    except Exception as e:
+        return newError("Could not get attribute: %s" % e.message)
+
+def evalGetCallExpression(objEvaluated, property, env):
+    try:
+        methodEvaluated = evalGetExpression(objEvaluated, property.function, env)
+        if isError(methodEvaluated):
+            return methodEvaluated
+        if methodEvaluated.objectType != OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
+            return newError("Not a method: %s" % property)
+
+        args = evalExpressions(property.arguments, env)
+        if len(args) == 1 and isError(args[0]):
+            return args[0]
+
+        return applyFunction(methodEvaluated, args)
     except Exception as e:
         return newError("Could not get attribute: %s" % e.message)
 
@@ -478,8 +497,10 @@ def applyFunction(function, args):
         return unwrapReturnValue(evaluated)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
         return function.func(args)
+    elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
+        return function.call(args)
 
-    return newError("Not a function: %s" % function.objectType)
+    return newError("Cannot call: %s" % function.objectType)
 
 def extendFunctionEnv(function, args, env):
     newEnv = env.newInner()

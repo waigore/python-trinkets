@@ -350,6 +350,8 @@ class VM(object):
             self.callClosure(callee, numArgs)
         elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
             self.callBuiltin(callee, numArgs)
+        elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
+            self.callBuiltinMethod(callee, numArgs)
         else:
             raise BoaVMError("Calling non-function/builtin")
 
@@ -363,6 +365,13 @@ class VM(object):
     def callBuiltin(self, fn, numArgs):
         args = self.stack[self.sp-numArgs:self.sp]
         result = fn.func(args)
+        self.sp = self.sp - 1 - numArgs
+        self.push(result)
+        self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop
+
+    def callBuiltinMethod(self, fn, numArgs):
+        args = self.stack[self.sp-numArgs:self.sp]
+        result = fn.call(args)
         self.sp = self.sp - 1 - numArgs
         self.push(result)
         self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop

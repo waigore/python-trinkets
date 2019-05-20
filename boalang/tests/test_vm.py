@@ -220,6 +220,9 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'let o = object(); o.arr = [1, 2, 3]; o.arr[0] = [4, 5, 6, 7]; o.arr[0].length')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '4')
 
+        helper = VMHelper(self, 'let o = object(); o.arr = ["one", "two"]; o.arr[o.arr.length-1].toUpper()')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_STRING, '"TWO"')
+
     def test_attributes(self):
         helper = VMHelper(self, '[1, 2, 3].length == "123".length')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')

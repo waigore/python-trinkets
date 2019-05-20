@@ -72,6 +72,7 @@ class TestEval(unittest.TestCase):
             ("[].length", OBJECT_TYPES.OBJECT_TYPE_INT, 0),
             ("[1, 2, 3, 4, 5, 6].length", OBJECT_TYPES.OBJECT_TYPE_INT, 6),
             ("[[0], [1, 2]][1].length", OBJECT_TYPES.OBJECT_TYPE_INT, 2),
+            ('("mon"+"key").toUpper().toLower() == "monkey"', OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
         ]
 
         for code, expectedType, expectedValue in exprs:
