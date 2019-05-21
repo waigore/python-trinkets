@@ -16,6 +16,7 @@ STATEMENT_TYPE_BREAK = "BREAK_STATEMENT"
 STATEMENT_TYPE_CONTINUE = "CONTINUE_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
+EXPRESSION_TYPE_INSTANCE_REF = "INSTANCE_REF_EXPRESSION"
 EXPRESSION_TYPE_INT_LIT = "INT_LIT_EXPRESSION"
 EXPRESSION_TYPE_FUNC_LIT = "FUNC_LIT_EXPRESSION"
 EXPRESSION_TYPE_STR_LIT = "STR_LIT_EXPRESSION"
@@ -147,6 +148,13 @@ class Identifier(Expression):
 
     def __repr__(self):
         return str(self.value)
+
+class InstanceReference(Expression):
+    def __init__(self, token):
+        super(InstanceReference, self).__init__(EXPRESSION_TYPE_INSTANCE_REF, token)
+
+    def __repr__(self):
+        return 'this'
 
 class Boolean(Expression):
     def __init__(self, token, value):

@@ -12,9 +12,10 @@ class BoaEvalError(Exception): pass
 class BoaEnvError(Exception): pass
 
 class Environment(object):
-    def __init__(self, outer=None):
+    def __init__(self, outer=None, instance=None):
         self.store = {}
         self.outer = outer
+        self.instance = instance
 
     def newInner(self):
         env = Environment(outer=self)

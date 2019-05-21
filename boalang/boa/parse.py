@@ -89,6 +89,7 @@ class Parser(object):
 
     def registerAllParseFns(self):
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_IDENT, self.parseIdentifier)
+        self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_THIS, self.parseInstanceReference)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_INT, self.parseIntegerLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_STR, self.parseStringLiteral)
         self.registerPrefix(TOKEN_TYPES.TOKEN_TYPE_NULL, self.parseNullLiteral)
@@ -487,6 +488,10 @@ class Parser(object):
     def parseIdentifier(self):
         ident = Identifier(self.curToken)
         return ident
+
+    def parseInstanceReference(self):
+        this = InstanceReference(self.curToken)
+        return this
 
     def parseBoolean(self):
         bool = Boolean(self.curToken, self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_TRUE))

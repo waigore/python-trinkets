@@ -47,6 +47,7 @@ TOKEN_TYPE_NOTIN = 'TOKEN_TYPE_NOTIN'
 TOKEN_TYPE_AND = 'TOKEN_TYPE_AND'
 TOKEN_TYPE_OR = 'TOKEN_TYPE_OR'
 TOKEN_TYPE_NULL = 'TOKEN_TYPE_NULL'
+TOKEN_TYPE_THIS = 'TOKEN_TYPE_THIS'
 
 KEYWORD_FN = 'fn'
 KEYWORD_FUNCTION = 'function'
@@ -67,6 +68,7 @@ KEYWORD_NOTIN = 'notin'
 KEYWORD_AND = 'and'
 KEYWORD_OR = 'or'
 KEYWORD_NULL = 'null'
+KEYWORD_THIS = 'this'
 
 class TokenType(object):
     def __init__(self, name, value, isOperator=True, isKeyword=False):
@@ -111,6 +113,7 @@ TOKEN_TYPES = DictLikeStruct({
     TOKEN_TYPE_AND: TokenType(TOKEN_TYPE_AND, KEYWORD_AND, isOperator=False, isKeyword=True),
     TOKEN_TYPE_OR: TokenType(TOKEN_TYPE_OR, KEYWORD_OR, isOperator=False, isKeyword=True),
     TOKEN_TYPE_NULL: TokenType(TOKEN_TYPE_NULL, KEYWORD_NULL, isOperator=False, isKeyword=True),
+    TOKEN_TYPE_THIS: TokenType(TOKEN_TYPE_THIS, KEYWORD_THIS, isOperator=False, isKeyword=True),
     TOKEN_TYPE_ASSIGN: TokenType(TOKEN_TYPE_ASSIGN, '='),
     TOKEN_TYPE_EQ: TokenType(TOKEN_TYPE_EQ, '=='),
     TOKEN_TYPE_NEQ: TokenType(TOKEN_TYPE_NEQ, '!='),
@@ -155,6 +158,7 @@ KEYWORDS =  DictLikeStruct({
     KEYWORD_AND: TOKEN_TYPE_AND,
     KEYWORD_OR: TOKEN_TYPE_OR,
     KEYWORD_NULL: TOKEN_TYPE_NULL,
+    KEYWORD_THIS: TOKEN_TYPE_THIS,
 })
 
 def allOperatorTypes():

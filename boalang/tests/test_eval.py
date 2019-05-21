@@ -177,6 +177,20 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_objectsAndAttributes(self):
+        exprs = [
+            ("let a = object(); a.getLength = fn() { return this.length; }; a.length = 5; a.getLength()", OBJECT_TYPES.OBJECT_TYPE_INT, 5),
+            ("let a = object(); a.b = object(); a.getB = fn() { return this.b; }; a.b.name = 'ABC'; a.getB().name", OBJECT_TYPES.OBJECT_TYPE_STRING, "ABC"),
+            ("let a = object(); a.b = '123456'; a.isLong = fn() { if (this.b.length > 4) { true } else { false } }; a.isLong()", OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, True),
+            ("let a = object(); a.string = '123456'; a.number = 123456; a.get = fn(x) { if (x) { this.string } else { this.number} }; a.get(true)", OBJECT_TYPES.OBJECT_TYPE_STRING, "123456"),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            env = Environment()
+            result = env.evaluate(code)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
     def test_evalErrors(self):
         exprs = [
             ("true + false", OBJECT_TYPES.OBJECT_TYPE_ERROR),

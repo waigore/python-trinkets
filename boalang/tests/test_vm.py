@@ -223,6 +223,9 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'let o = object(); o.arr = ["one", "two"]; o.arr[o.arr.length-1].toUpper()')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_STRING, '"TWO"')
 
+        helper = VMHelper(self, "let a = object(); a.string = '123456'; a.number = 123456; a.get = fn(x) { if (x) { this.string } else { this.number} }; a.get(true)")
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_STRING, '"123456"')
+
     def test_attributes(self):
         helper = VMHelper(self, '[1, 2, 3].length == "123".length')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_BOOLEAN, 'true')

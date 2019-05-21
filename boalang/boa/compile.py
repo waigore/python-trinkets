@@ -20,6 +20,7 @@ from .ast import (
     EXPRESSION_TYPE_HASH_LIT,
     EXPRESSION_TYPE_BOOLEAN,
     EXPRESSION_TYPE_IDENT,
+    EXPRESSION_TYPE_INSTANCE_REF,
     EXPRESSION_TYPE_INFIX,
     EXPRESSION_TYPE_PREFIX,
     EXPRESSION_TYPE_INDEX,
@@ -81,6 +82,7 @@ from .code import (
     OPSETBLOCK,
     OPGETATTR,
     OPSETATTR,
+    OPGETINSTANCE,
 )
 from .symbol import (
     SymbolTable,
@@ -354,6 +356,8 @@ class Compiler(object):
                 #    self.emit(OPGETGLOBAL, symbol.index)
                 #else:
                 #    self.emit(OPGETLOCAL, symbol.index)
+            elif exprType == EXPRESSION_TYPE_INSTANCE_REF:
+                self.emit(OPGETINSTANCE)
             elif exprType == EXPRESSION_TYPE_INDEX:
                 self.compile(node.left)
                 self.compile(node.index)

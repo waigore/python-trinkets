@@ -12,6 +12,7 @@ OBJECT_TYPE_HASH_PAIR = 'OBJECT_TYPE_HASH_PAIR'
 OBJECT_TYPE_HASH_ITERATOR = 'OBJECT_TYPE_HASH_ITERATOR'
 OBJECT_TYPE_NULL = 'OBJECT_TYPE_NULL'
 OBJECT_TYPE_FUNCTION = 'OBJECT_TYPE_FUNCTION'
+OBJECT_TYPE_METHOD = 'OBJECT_TYPE_METHOD'
 OBJECT_TYPE_CLOSURE = 'OBJECT_TYPE_CLOSURE'
 OBJECT_TYPE_COMPILED_FUNCTION = 'OBJECT_TYPE_COMPILED_FUNCTION'
 OBJECT_TYPE_BUILTIN_FUNCTION = 'OBJECT_TYPE_BUILTIN_FUNCTION'
@@ -55,6 +56,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_CONTINUE: BoaObjectType(OBJECT_TYPE_CONTINUE, "continue"),
     OBJECT_TYPE_ERROR: BoaObjectType(OBJECT_TYPE_ERROR, "error"),
     OBJECT_TYPE_FUNCTION: BoaObjectType(OBJECT_TYPE_FUNCTION, "function"),
+    OBJECT_TYPE_METHOD: BoaObjectType(OBJECT_TYPE_METHOD, "method"),
     OBJECT_TYPE_COMPILED_FUNCTION: BoaObjectType(OBJECT_TYPE_COMPILED_FUNCTION, "compiledFunction"),
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
     OBJECT_TYPE_BUILTIN_METHOD: BoaObjectType(OBJECT_TYPE_BUILTIN_METHOD, "builtinMethod"),
@@ -90,14 +92,17 @@ def newError(msg):
 def newFunction(params, body, env):
     return newObject(OBJECT_TYPE_FUNCTION, params, body, env)
 
+def newMethod(instance, params, body, env):
+    return newObject(OBJECT_TYPE_METHOD, instance, params, body, env)
+
 def newCompiledFunction(instr, numLocals=0, numParameters=0):
     return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr, numLocals, numParameters)
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
 
-def newClosure(compiledFunction, freeVariables):
-    return newObject(OBJECT_TYPE_CLOSURE, compiledFunction, freeVariables)
+def newClosure(compiledFunction, freeVariables, instance=None):
+    return newObject(OBJECT_TYPE_CLOSURE, compiledFunction, freeVariables, instance)
 
 class BoaObject(object):
     def __init__(self, typ):
@@ -259,20 +264,39 @@ class BoaFunction(BoaObject):
     def inspect(self):
         return 'fn(%s) {%s}' % ([str(p) for p in self.parameters], str(self.body))
 
+class BoaMethod(BoaObject):
+    def __init__(self, instance, parameters, body, env):
+        super(BoaMethod, self).__init__(OBJECT_TYPES.OBJECT_TYPE_METHOD)
+        self.instance = instance
+        self.parameters = parameters
+        self.body = body
+        self.env = env
+
+    def __repr__(self):
+        return '<boaMethod of %s (bound)>' % (self.instance.objectType)
+
+    def inspect(self):
+        return '<boaMethod of %s (bound)>' % (self.instance.objectType)
+
 class BoaClosure(BoaObject):
-    def __init__(self, compiledFunction, freeVariables):
+    def __init__(self, compiledFunction, freeVariables, instance=None):
         super(BoaClosure, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLOSURE)
         self.compiledFunction = compiledFunction
         self.freeVariables = freeVariables
+        self.instance = instance
 
     def __repr__(self):
-        return '<closure %s free=[%s]>' % (
-            self.compiledFunction, ', '.join([free.inspect() for free in self.freeVariables])
+        return '<closure %s%s free=[%s]>' % (
+            self.instance + '.' if self.instance else '',
+            self.compiledFunction,
+            ', '.join([free.inspect() for free in self.freeVariables])
         )
 
     def inspect(self):
-        return '<closure %s free=[%s]>' % (
-            self.compiledFunction, ', '.join([free.inspect() for free in self.freeVariables])
+        return '<closure %s%s free=[%s]>' % (
+            self.instance + '.' if self.instance else '',
+            self.compiledFunction,
+            ', '.join([free.inspect() for free in self.freeVariables])
         )
 
 class BoaBuiltinMethod(BoaObject):
@@ -475,6 +499,7 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_RETURN_VALUE: BoaReturnValue,
     OBJECT_TYPE_ERROR: BoaError,
     OBJECT_TYPE_FUNCTION: BoaFunction,
+    OBJECT_TYPE_METHOD: BoaMethod,
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaBuiltinFunction,
     OBJECT_TYPE_STRING: BoaString,
     OBJECT_TYPE_ARRAY: BoaArray,

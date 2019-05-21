@@ -7,6 +7,7 @@ from .object import (
     newReturnValue,
     newError,
     newFunction,
+    newMethod,
     NULL,
     TRUE,
     FALSE,
@@ -35,6 +36,7 @@ from .ast import (
     STATEMENT_TYPE_BREAK,
     STATEMENT_TYPE_CONTINUE,
     EXPRESSION_TYPE_IDENT,
+    EXPRESSION_TYPE_INSTANCE_REF,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_FUNC_LIT,
     EXPRESSION_TYPE_STR_LIT,
@@ -108,6 +110,8 @@ def boaEval(node, env=None):
             return evalHashLiteral(node, env)
         elif exprType == EXPRESSION_TYPE_IDENT:
             return evalIdentifier(node, env)
+        elif exprType == EXPRESSION_TYPE_INSTANCE_REF:
+            return evalInstanceRef(node, env)
         elif exprType == EXPRESSION_TYPE_BOOLEAN:
             return TRUE if node.value else FALSE
         elif exprType == EXPRESSION_TYPE_NULL_LIT:
@@ -208,7 +212,13 @@ def evalIndexedAssignment(left, idx, val, env):
 
 def evalAttributeAssignment(obj, attrName, val, env):
     try:
-        obj.setAttribute(attrName, val)
+        if val.objectType == OBJECT_TYPES.OBJECT_TYPE_FUNCTION:
+            method = newMethod(obj, val.parameters, val.body, env)
+            obj.setAttribute(attrName, method)
+        #elif val.objectType == OBJECT_TYPES.OBJECT_TYPE_METHOD:
+        #    return newError("Instance method cannot be rebound: %s.%s" % (attrName, obj.inspect()))
+        else:
+            obj.setAttribute(attrName, val)
     except Exception as e:
         return newError("Could not assign value to attribute %s of %s" % (attrName, obj.inspect()))
 
@@ -495,6 +505,13 @@ def applyFunction(function, args):
         if isError(evaluated):
             return evaluated
         return unwrapReturnValue(evaluated)
+    elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_METHOD:
+        innerEnv = extendFunctionEnv(function, args, function.env)
+        innerEnv.instance = function.instance
+        evaluated = boaEval(function.body, innerEnv)
+        if isError(evaluated):
+            return evaluated
+        return unwrapReturnValue(evaluated)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
         return function.func(args)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
@@ -556,6 +573,14 @@ def evalIdentifier(node, env):
             return bfn
         return newError("Identifier not found: %s" % node.value)
     return val
+
+def evalInstanceRef(node, env):
+    if env.instance is None:
+        if env.outer is not None:
+            return evalInstanceRef(node, env.outer)
+        else:
+            return newError("Not bound to instance: %s" % node.token)
+    return env.instance
 
 def getBuiltinFunction(name):
     if name not in BUILTIN_FUNCTIONS: return None

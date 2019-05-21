@@ -44,6 +44,7 @@ from .code import (
     OPCURRENTCLOSURE,
     OPGETATTR,
     OPSETATTR,
+    OPGETINSTANCE,
     readUint16,
     readUint8,
 )
@@ -132,6 +133,16 @@ class VM(object):
     def pushFrame(self, frame):
         self.frames[self.frameIndex] = frame
         self.frameIndex += 1
+
+    def lastFrameByCondition(self, fn):
+        i = self.frameIndex-1
+        fr = self.frames[i]
+        while i > 0 and not fn(fr):
+            i -= 1
+            fr = self.frames[i]
+        if not fn(fr):
+            return None
+        return fr
 
     def popLastFrameOfType(self, frameType):
         i = self.frameIndex-1
@@ -225,7 +236,11 @@ class VM(object):
                 val = self.pop()
                 attrName = self.pop()
                 obj = self.pop()
-                obj.setAttribute(attrName.value, val)
+                if val.objectType == OBJECT_TYPES.OBJECT_TYPE_CLOSURE:
+                    closure = newClosure(val.compiledFunction, val.freeVariables, instance=obj)
+                    obj.setAttribute(attrName.value, closure)
+                else:
+                    obj.setAttribute(attrName.value, val)
             elif op == OPPOP:
                 self.pop()
             elif op == OPSETGLOBAL:
@@ -240,6 +255,12 @@ class VM(object):
                 builtinIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
                 self.push(getBuiltinByIndex(builtinIndex))
+            elif op == OPGETINSTANCE:
+                frame = self.lastFrameByCondition(lambda fr: fr.cl is not None and fr.cl.instance is not None)
+                if frame is None:
+                    raise BoaVMError("this not bound to instance")
+                currentClosure = frame.cl
+                self.push(currentClosure.instance)
             elif op == OPGETFREE:
                 freeIndex = readUint8(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(1)
