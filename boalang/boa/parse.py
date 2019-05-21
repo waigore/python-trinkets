@@ -159,6 +159,13 @@ class Parser(object):
         msg = 'Expression cannot be used as target of assignment: %s' % expr
         self.errors.append(ParserError(msg))
 
+    def invalidMethodNameError(self, name):
+        msg = 'Expected identifier as class method name: %s' % name
+        self.errors.append(ParserError(msg))
+
+    def nestedClassDefError(self, name):
+        msg = 'Class cannot be defined in nested scope: %s' % name
+
     def noPrefixParseFnError(self, tokenType):
         msg = 'Unparseable token %s found' % tokenType
         self.errors.append(ParserError(msg))
@@ -197,6 +204,8 @@ class Parser(object):
         elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_BREAK) or \
                 self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CONTINUE):
             return self.parseLoopControlStatement()
+        elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_CLASS):
+            return self.parseClassStatement()
         #elif self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT) and \
         #        (self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_ASSIGN) or \
         #        self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_LBRACKET)):
@@ -342,6 +351,61 @@ class Parser(object):
 
         return statement
 
+    def parseClassStatement(self):
+        classToken = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_IDENT):
+            return None
+
+        className = self.curToken.literal
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        methodStatements = self.parseClassDefinition()
+
+        #if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RBRACE):
+        #    return None
+
+        classStatement = ClassStatement(classToken, className, methodStatements)
+        return classStatement
+
+    def parseClassDefinition(self):
+        lbrace = self.curToken
+        statements = []
+
+        self.nextToken()
+        while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and \
+                not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_EOF):
+            statement = self.parseMethodStatement()
+            if statement is not None:
+                statements.append(statement)
+            self.nextToken()
+
+        return statements
+
+    def parseMethodStatement(self):
+        if not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT):
+            self.invalidMethodNameError(self.curToken)
+            return None
+        methodToken = self.curToken
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LPAREN):
+            return None
+
+        parameters = self.parseFunctionParameters()
+
+        if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
+            return None
+
+        body = self.parseBlockStatement()
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
+
+        methodStatement = MethodStatement(methodToken, methodToken.literal, parameters, body)
+        return methodStatement
+
     def parseExpressionStatement(self):
         exprToken = self.curToken
         expr = self.parseExpression(LOWEST)
@@ -478,6 +542,9 @@ class Parser(object):
         while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and \
                 not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_EOF):
             statement = self.parseStatement()
+            if statement.statementType == STATEMENT_TYPE_CLASS:
+                self.nestedClassDefError(statement.name)
+                statement = None
             if statement is not None:
                 statements.append(statement)
             self.nextToken()

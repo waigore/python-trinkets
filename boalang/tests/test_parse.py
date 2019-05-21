@@ -10,6 +10,7 @@ from boa.ast import (
     STATEMENT_TYPE_WHILE,
     STATEMENT_TYPE_FOR,
     STATEMENT_TYPE_ASSIGN,
+    STATEMENT_TYPE_CLASS,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_PREFIX,
@@ -36,15 +37,18 @@ class TestParsing(unittest.TestCase):
         self.assertEqual(valueTypes, [EXPRESSION_TYPE_INT_LIT, EXPRESSION_TYPE_INT_LIT, EXPRESSION_TYPE_IDENT])
         self.assertEqual(valueLiterals, [5, 10, "y"])
 
-    def parseAndCmpAssignPairs(self, assignPair):
-        code, expected = assignPair
+    def parseAndCmpStatementPairs(self, pair, statementType):
+        code, expected = pair
         p = Parser(code)
         prog = p.parseProgram()
         self.assertEqual(len(prog.statements), 1)
 
         statement = prog.statements[0]
-        self.assertEqual(statement.statementType, STATEMENT_TYPE_ASSIGN)
+        self.assertEqual(statement.statementType, statementType)
         self.assertEqual(str(statement), expected)
+
+    def parseAndCmpAssignPairs(self, assignPair):
+        self.parseAndCmpStatementPairs(assignPair, STATEMENT_TYPE_ASSIGN)
 
     def test_assigns(self):
         pairs = [
@@ -57,6 +61,18 @@ class TestParsing(unittest.TestCase):
         ]
         for pair in pairs:
             self.parseAndCmpAssignPairs(pair)
+
+    def parseAndCmpClassPairs(self, classPair):
+        self.parseAndCmpStatementPairs(classPair, STATEMENT_TYPE_CLASS)
+
+    def test_classes(self):
+        pairs = [
+            ("class a { }", "class a {  }"),
+            ("class a { m1() {}; m2() {}; m3() {} }", "class a { m1 () {}; m2 () {}; m3 () {} }"),
+            ("class a { m1() { return this.length }; m2() { return this; } }", "class a { m1 () {return this.length;}; m2 () {return this;} }"),
+        ]
+        for pair in pairs:
+            self.parseAndCmpClassPairs(pair)
 
     def test_returns(self):
         code = """return 1; return 5; return 999321; """
