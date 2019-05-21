@@ -1,0 +1,19 @@
+
+let person = fn(name, age, occupation) {
+  let o = object();
+  o.name = name;
+  o.age = age;
+  o.occupation = occupation;
+  o.type = 'Person';
+  o.greet = fn(other) {
+    return 'Greetings ' + other.name + ', my name is ' + this.name + ' and I am a ' + this.occupation + '.';
+  };
+
+  return o;
+}
+
+let john = person('John', 34, 'programmer');
+let jack = person('Jack', 34, 'manager');
+
+let johnGreeting = john.greet(jack);
+let jackGreeting = jack.greet(john);
