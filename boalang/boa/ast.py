@@ -14,6 +14,8 @@ STATEMENT_TYPE_WHILE = "WHILE_STATEMENT"
 STATEMENT_TYPE_FOR = "FOR_STATEMENT"
 STATEMENT_TYPE_BREAK = "BREAK_STATEMENT"
 STATEMENT_TYPE_CONTINUE = "CONTINUE_STATEMENT"
+STATEMENT_TYPE_CLASS = "CLASS_STATEMENT"
+STATEMENT_TYPE_METHOD = "METHOD_STATEMENT"
 
 EXPRESSION_TYPE_IDENT = "IDENT_EXPRESSION"
 EXPRESSION_TYPE_INSTANCE_REF = "INSTANCE_REF_EXPRESSION"
@@ -140,6 +142,27 @@ class ForStatement(Statement):
 
     def __repr__(self):
         return 'for (%s in %s) %s' % (self.iterator, self.iterable, self.blockStatement)
+
+class ClassStatement(Statement):
+    def __init__(self, token, name, methodStatements):
+        super(ClassStatement, self).__init__(STATEMENT_TYPE_CLASS, token, name)
+        self.methodStatements = methodStatements
+
+    @property
+    def name(self):
+        return self.value
+
+    def __repr__(self):
+        return 'class %s { %s }' % (self.name, '; '.join([str(m) for m in self.methodStatements]))
+
+class MethodStatement(Statement):
+    def __init__(self, token, name, parameters, body):
+        self.parameters = parameters #list of identifiers
+        self.body = body #BlockStatement
+        self.name = name
+
+    def __repr__(self):
+        return '%s (%s) %s' % (self.name, ','.join([str(p) for p in self.parameters]), self.body)
 
 class Identifier(Expression):
     def __init__(self, token, value=None):
