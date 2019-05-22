@@ -555,8 +555,15 @@ def applyFunction(function, args):
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
         return function.func(args)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_CLASS:
-        constructor = function.getConstructorByArgNum(len(args))
-        return constructor.func(args)
+        clazz = function
+        instance, constructor = clazz.createInstance(args)
+        if constructor:
+            innerEnv = extendFunctionEnv(constructor, args, constructor.env)
+            innerEnv.instance = instance
+            evaluated = boaEval(constructor.body, innerEnv)
+            if isError(evaluated):
+                return evaluated
+        return instance
 
     return newError("Cannot call: %s" % function.objectType)
 

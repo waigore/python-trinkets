@@ -164,8 +164,20 @@ class BoaClass(BoaObject):
         super(BoaClass, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLASS)
         self.name = name
         self.methods = methods #dict of <name, BoaFunction> entries
-        self.constructors = {0: BoaBuiltinMethod('constructor', self, self.constructor_default)}
+        #self.constructors = {0: BoaBuiltinMethod('constructor', self, self.constructor_default)}
+        self.constructor = None
         self.env = env
+
+    def createInstance(self, args):
+        instance = newClassInstance(self)
+        for methodName, unboundMethod in self.methods.items():
+            boundMethod = newMethod(instance, unboundMethod.parameters, unboundMethod.body, self.env)
+            instance.setAttribute(methodName, boundMethod)
+        if self.constructor:
+            boundConstructor = newMethod(instance, self.constructor.parameters, self.constructor.body, self.env)
+        else:
+            boundConstructor = None
+        return instance, boundConstructor
 
     def getConstructorByArgNum(self, argNum):
         try:
