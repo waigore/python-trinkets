@@ -45,6 +45,8 @@ from .code import (
     OPGETATTR,
     OPSETATTR,
     OPGETINSTANCE,
+    OPDEFCLASS,
+    OPGETCLASS,
     readUint16,
     readUint8,
 )
@@ -54,6 +56,7 @@ from .object import (
     newArray,
     newHash,
     newCompiledFunction,
+    newCompiledClass,
     newClosure,
     OBJECT_TYPES,
     TRUE,
@@ -70,6 +73,7 @@ from .evaluator import (
 STACK_SIZE = 2048
 GLOBALS_SIZE = 65536
 MAX_FRAMES = 1024
+MAX_CLASS_DEFS = 1024
 
 FRAME_TYPE_FUNCTION = "FUNCTION_FRAME"
 FRAME_TYPE_BLOCK = "BLOCK_FRAME"
@@ -94,6 +98,7 @@ class VM(object):
         self.constants = bytecode.constants
         self.stack = [None]*STACK_SIZE #stack of BoaObjects
         self.globals = [None]*GLOBALS_SIZE
+        self.classDefs = [None]*MAX_CLASS_DEFS
         self.sp = 0
         self.frames = [None]*MAX_FRAMES #stack of Frames
         self.frameIndex = 0
@@ -211,6 +216,18 @@ class VM(object):
                 self.push(FALSE)
             elif op == OPNULL:
                 self.push(NULL)
+            elif op == OPDEFCLASS:
+                classIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                numMethods = readUint16(self.currentInstr()[self.currentFrameIp()+3:])
+                self.incrCurrentFrameIp(4)
+                className = self.pop()
+                clazz = self.buildClass(className, self.sp-numMethods, self.sp)
+                self.classDefs[classIndex] = clazz
+                self.sp = self.sp-numMethods
+            elif op == OPGETCLASS:
+                classIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
+                self.incrCurrentFrameIp(2)
+                self.push(self.classDefs[classIndex])
             elif op == OPARRAY:
                 numElements = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(2)
@@ -373,6 +390,8 @@ class VM(object):
             self.callBuiltin(callee, numArgs)
         elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
             self.callBuiltinMethod(callee, numArgs)
+        elif callee.objectType == OBJECT_TYPES.OBJECT_TYPE_COMPILED_CLASS:
+            self.callCompiledClass(callee, numArgs)
         else:
             raise BoaVMError("Calling non-function/builtin")
 
@@ -397,6 +416,13 @@ class VM(object):
         self.push(result)
         self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop
 
+    def callCompiledClass(self, clazz, numArgs):
+        args = self.stack[self.sp-numArgs:self.sp]
+        instance, constructor = clazz.createInstance()
+        self.sp = self.sp - 1 - numArgs
+        self.push(instance)
+        self.incrCurrentFrameIp(1)
+
     def callBlock(self):
         cl = self.stack[self.sp-1]
         frame = Frame(FRAME_TYPE_BLOCK, cl, self.sp)
@@ -414,6 +440,14 @@ class VM(object):
     def buildArray(self, startIndex, endIndex):
         elements = self.stack[startIndex:endIndex]
         return newArray(elements)
+
+    def buildClass(self, className, startIndex, endIndex):
+        methodNamePairs = {}
+        for i in range(startIndex, endIndex, 2):
+            name = self.stack[i]
+            method = self.stack[i+1]
+            methodNamePairs[name.value] = method
+        return newCompiledClass(className.value, methodNamePairs)
 
     def buildHash(self, startIndex, endIndex):
         pairs = []

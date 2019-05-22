@@ -36,6 +36,8 @@ from boa.code import (
     OPCLOSURE,
     OPGETATTR,
     OPSETATTR,
+    OPDEFCLASS,
+    OPGETCLASS,
     makeInstr,
     formatInstrs,
 )
@@ -462,6 +464,27 @@ class TestCompilation(unittest.TestCase):
                 makeInstr(OPRETURNVALUE), #0000
             ])
         ])
+
+    def test_classes(self):
+        helper = CompileHelper(self, 'class A {}')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPDEFCLASS, 0, 0),
+        ])
+
+        helper = CompileHelper(self, 'class A { m1(x) {}; m2(y, z) {}; m3(a) {} }')
+        helper.checkInstructionsExpected([
+            makeInstr(OPCONSTANT, 0),
+            makeInstr(OPCLOSURE, 1, 0),
+            makeInstr(OPCONSTANT, 2),
+            makeInstr(OPCLOSURE, 3, 0),
+            makeInstr(OPCONSTANT, 4),
+            makeInstr(OPCLOSURE, 5, 0),
+            makeInstr(OPCONSTANT, 6),
+            makeInstr(OPDEFCLASS, 0, 6),
+        ])
+
+        #helper = CompileHelper(self, 'class A { m1(x) {}; m2(y, z) {}; m3(a) {} }; let a = A()')
 
 if __name__ == '__main__':
     unittest.main()

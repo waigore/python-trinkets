@@ -23,6 +23,7 @@ OBJECT_TYPE_BREAK = 'OBJECT_TYPE_BREAK'
 OBJECT_TYPE_ERROR = 'OBJECT_TYPE_ERROR'
 OBJECT_TYPE_CLASS = 'OBJECT_TYPE_CLASS'
 OBJECT_TYPE_CLASS_INSTANCE = 'OBJECT_TYPE_CLASS_INSTANCE'
+OBJECT_TYPE_COMPILED_CLASS = 'OBJECT_TYPE_COMPILED_CLASS'
 
 class NoSuchObjectTypeError(Exception): pass
 
@@ -64,6 +65,7 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_BUILTIN_METHOD: BoaObjectType(OBJECT_TYPE_BUILTIN_METHOD, "builtinMethod"),
     OBJECT_TYPE_CLOSURE: BoaObjectType(OBJECT_TYPE_CLOSURE, "closure"),
     OBJECT_TYPE_CLASS: BoaObjectType(OBJECT_TYPE_CLASS, "class"),
+    OBJECT_TYPE_COMPILED_CLASS: BoaObjectType(OBJECT_TYPE_COMPILED_CLASS, "compiledClass"),
     OBJECT_TYPE_CLASS_INSTANCE: BoaObjectType(OBJECT_TYPE_CLASS_INSTANCE, "classInstance"),
 })
 
@@ -107,6 +109,9 @@ def newClassInstance(clazz):
 
 def newCompiledFunction(instr, numLocals=0, numParameters=0):
     return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr, numLocals, numParameters)
+
+def newCompiledClass(name, methods):
+    return newObject(OBJECT_TYPE_COMPILED_CLASS, name, methods)
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
@@ -168,7 +173,7 @@ class BoaClass(BoaObject):
         self.constructor = None
         self.env = env
 
-    def createInstance(self, args):
+    def createInstance(self):
         instance = newClassInstance(self)
         for methodName, unboundMethod in self.methods.items():
             boundMethod = newMethod(instance, unboundMethod.parameters, unboundMethod.body, self.env)
@@ -179,26 +184,35 @@ class BoaClass(BoaObject):
             boundConstructor = None
         return instance, boundConstructor
 
-    def getConstructorByArgNum(self, argNum):
-        try:
-            return self.constructors[argNum]
-        except:
-            return newError("No constructor with %d arguments found" % argNum)
-
-    def constructor_default(self, args):
-        if len(args) != 0:
-            return newError("Default constructor takes no arguments. Got %d" % len(args))
-        instance = newClassInstance(self)
-        for methodName, unboundMethod in self.methods.items():
-            boundMethod = newMethod(instance, unboundMethod.parameters, unboundMethod.body, self.env)
-            instance.setAttribute(methodName, boundMethod)
-        return instance
-
     def __repr__(self):
         return "<class %s>" % (self.name)
 
     def inspect(self):
         return "<class %s>" % (self.name)
+
+class BoaCompiledClass(BoaObject):
+    def __init__(self, name, methods):
+        super(BoaCompiledClass, self).__init__(OBJECT_TYPES.OBJECT_TYPE_COMPILED_CLASS)
+        self.methods = methods #dict of <name, BoaFunction> entries
+        self.constructor = None
+        self.name = name
+
+    def createInstance(self):
+        instance = newClassInstance(self)
+        for methodName, unboundMethod in self.methods.items():
+            boundMethod = newClosure(unboundMethod.compiledFunction, unboundMethod.freeVariables, instance=instance)
+            instance.setAttribute(methodName, boundMethod)
+        if self.constructor:
+            boundConstructor = newClosure(self.constructor.compiledFunction, self.constructor.freeVariables, instance=instance)
+        else:
+            boundConstructor = None
+        return instance, boundConstructor
+
+    def __repr__(self):
+        return "<class(compiled) %s>" % (self.name)
+
+    def inspect(self):
+        return "<class(compiled) %s>" % (self.name)
 
 class BoaClassInstance(BoaObject):
     def __init__(self, clazz):
@@ -567,5 +581,6 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_COMPILED_FUNCTION: BoaCompiledFunction,
     OBJECT_TYPE_CLOSURE: BoaClosure,
     OBJECT_TYPE_CLASS: BoaClass,
+    OBJECT_TYPE_COMPILED_CLASS: BoaCompiledClass,
     OBJECT_TYPE_CLASS_INSTANCE: BoaClassInstance,
 })

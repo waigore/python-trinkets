@@ -250,5 +250,12 @@ class TestVM(unittest.TestCase):
         helper = VMHelper(self, 'let w = fn() { let c = fn(x) { if (x == 0) { 0 } else { c(x-1) } }; c(1) }; w()')
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '0')
 
+    def test_classes(self):
+        helper = VMHelper(self, 'class A {}; let a = A(); a.i = 1+1; a.i')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '2')
+
+        helper = VMHelper(self, 'class A { x(y) { return y + this.z } }; let a = A(); a.z = 5; a.x(6)')
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '11')
+
 if __name__ == '__main__':
     unittest.main()

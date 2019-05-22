@@ -97,6 +97,7 @@ from .symbol import (
     FREE_SCOPE,
     FUNCTION_SCOPE,
     BLOCK_SCOPE,
+    CLASS_SCOPE,
 )
 from .builtins import (
     BUILTIN_FUNCTION_LIST,
@@ -153,8 +154,12 @@ class Compiler(object):
             self.emit(OPCURRENTCLOSURE)
         elif s.scope == BLOCK_SCOPE:
             self.emit(OPGETBLOCK, s.scopeDiff, s.index)
-        else:
+        elif s.scope == CLASS_SCOPE:
+            self.emit(OPGETCLASS, s.index)
+        elif s.scope == BUILTIN_SCOPE:
             self.emit(OPGETBUILTIN, s.index)
+        else:
+            raise BoaCompilerError("Symbol with unknown scope: %s" % s.scope)
 
     def assignSymbol(self, s):
         if s.scope == GLOBAL_SCOPE:
@@ -166,14 +171,6 @@ class Compiler(object):
         else:
             raise BoaCompilerError("Cannot assign symbol at current scope: %s" % s.name)
 
-    def compileClasses(self, node):
-        nodeType = node.nodeType
-        if nodeType != NODE_TYPE_PROGRAM:
-            raise BoaCompilerError("Classes must be compiled from the root program node")
-        for s in node.statements:
-            if s.statementType == STATEMENT_TYPE_CLASS:
-                self.compileClassStatement(s)
-
     def compileClassStatement(self, classStatement):
         try:
             s = self.symbolTable.resolve(classStatement.name)
@@ -181,17 +178,29 @@ class Compiler(object):
                 raise BoaCompilerError("Class already defined: %s" % classStatement.name)
         except:
             pass
-        self.symbolTable.defineClassName(classStatement.name)
+
+        clazzSymbol = self.symbolTable.defineClassName(classStatement.name)
         for methodStatement in classStatement.methodStatements:
             self.compileMethodStatement(methodStatement)
 
-    def compileMethodStatement(self, methodStatment):
-        pass
+        self.emit(OPCONSTANT, self.addConstant(newString(classStatement.name)))
+
+        self.emit(OPDEFCLASS, clazzSymbol.index, len(classStatement.methodStatements)*2)
+
+    def compileMethodStatement(self, methodStatement):
+        self.emit(OPCONSTANT, self.addConstant(newString(methodStatement.name)))
+        self.compileFunction(None, methodStatement.parameters, methodStatement.body)
 
     def compile(self, node):
         nodeType = node.nodeType
         if nodeType == NODE_TYPE_PROGRAM:
-            for s in node.statements:
+            classStatements = [statement for statement in node.statements
+                                if statement.statementType == STATEMENT_TYPE_CLASS]
+            otherStatements = [statement for statement in node.statements
+                                if statement.statementType != STATEMENT_TYPE_CLASS]
+            for s in classStatements:
+                self.compileClassStatement(s)
+            for s in otherStatements:
                 self.compile(s)
         elif nodeType == NODE_TYPE_STATEMENT:
             stmtType = node.statementType
@@ -342,31 +351,7 @@ class Compiler(object):
             elif exprType == EXPRESSION_TYPE_NULL_LIT:
                 self.emit(OPNULL)
             elif exprType == EXPRESSION_TYPE_FUNC_LIT:
-                self.enterScope(isFunction=True)
-                if node.name is not None:
-                    self.symbolTable.defineFunctionName(node.name)
-                for param in node.parameters:
-                    self.symbolTable.define(param.value)
-
-                self.compile(node.body)
-
-                if self.lastInstructionIs(OPPOP):
-                    lastPos = self.currentScope().lastInstruction.position
-                    self.replaceInstruction(lastPos, makeInstr(OPRETURNVALUE))
-                    self.currentScope().lastInstruction.opcode = OPRETURNVALUE
-
-                if not self.lastInstructionIs(OPRETURNVALUE):
-                    self.emit(OPNULL)
-                    self.emit(OPRETURNVALUE)
-
-                freeSymbols = self.symbolTable.freeSymbols
-                numLocals = self.symbolTable.numDefinitions
-                instructions = self.leaveScope()
-                for freeSymbol in freeSymbols:
-                    self.loadSymbol(freeSymbol)
-                compiledInstructions = b''.join(instructions)
-                compiledFn = newCompiledFunction(compiledInstructions, numLocals, len(node.parameters))
-                self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
+                self.compileFunction(node.name, node.parameters, node.body)
             elif exprType == EXPRESSION_TYPE_CALL:
                 self.compile(node.function)
                 for arg in node.arguments:
@@ -572,6 +557,32 @@ class Compiler(object):
         for arg in property.arguments:
             self.compile(arg)
         self.emit(OPCALL, len(property.arguments))
+
+    def compileFunction(self, name, parameters, body):
+        self.enterScope(isFunction=True)
+        if name is not None:
+            self.symbolTable.defineFunctionName(name)
+        for param in parameters:
+            self.symbolTable.define(param.value)
+
+        self.compile(body)
+
+        if self.lastInstructionIs(OPPOP):
+            self.removeLast()
+            self.emit(OPRETURNVALUE)
+
+        if not self.lastInstructionIs(OPRETURNVALUE):
+            self.emit(OPNULL)
+            self.emit(OPRETURNVALUE)
+
+        freeSymbols = self.symbolTable.freeSymbols
+        numLocals = self.symbolTable.numDefinitions
+        instructions = self.leaveScope()
+        for freeSymbol in freeSymbols:
+            self.loadSymbol(freeSymbol)
+        compiledInstructions = b''.join(instructions)
+        compiledFn = newCompiledFunction(compiledInstructions, numLocals, len(parameters))
+        self.emit(OPCLOSURE, self.addConstant(compiledFn), len(freeSymbols))
 
     def enterScope(self, isFunction=False):
         newScope = CompilationScope([], None, None)

@@ -109,7 +109,7 @@ DEFINITIONS = DictLikeStruct({
     OPGETATTR: Definition("OpGetAttr", []),
     OPSETATTR: Definition("OpSetAttr", []),
     OPGETINSTANCE: Definition("OpGetInstance", []),
-    OPDEFCLASS: Definition("OpDefClass", [2]),
+    OPDEFCLASS: Definition("OpDefClass", [2, 2]),
     OPGETCLASS: Definition("OpGetClass", [2]),
 })
 

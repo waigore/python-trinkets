@@ -556,7 +556,7 @@ def applyFunction(function, args):
         return function.func(args)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_CLASS:
         clazz = function
-        instance, constructor = clazz.createInstance(args)
+        instance, constructor = clazz.createInstance()
         if constructor:
             innerEnv = extendFunctionEnv(constructor, args, constructor.env)
             innerEnv.instance = instance
