@@ -156,10 +156,11 @@ class ClassStatement(Statement):
         return 'class %s { %s }' % (self.name, '; '.join([str(m) for m in self.methodStatements]))
 
 class MethodStatement(Statement):
-    def __init__(self, token, name, parameters, body):
+    def __init__(self, token, className, name, parameters, body):
         self.parameters = parameters #list of identifiers
         self.body = body #BlockStatement
         self.name = name
+        self.className = name
 
     def __repr__(self):
         return '%s (%s) %s' % (self.name, ','.join([str(p) for p in self.parameters]), self.body)

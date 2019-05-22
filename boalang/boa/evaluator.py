@@ -8,6 +8,8 @@ from .object import (
     newError,
     newFunction,
     newMethod,
+    newClass,
+    newClassInstance,
     NULL,
     TRUE,
     FALSE,
@@ -35,6 +37,8 @@ from .ast import (
     STATEMENT_TYPE_FOR,
     STATEMENT_TYPE_BREAK,
     STATEMENT_TYPE_CONTINUE,
+    STATEMENT_TYPE_CLASS,
+    STATEMENT_TYPE_METHOD,
     EXPRESSION_TYPE_IDENT,
     EXPRESSION_TYPE_INSTANCE_REF,
     EXPRESSION_TYPE_INT_LIT,
@@ -52,6 +56,18 @@ from .ast import (
     EXPRESSION_TYPE_CALL,
 )
 from .builtins import BUILTIN_FUNCTIONS
+
+CLASS_DEFS = {
+}
+
+def lookupClass(name):
+    try:
+        return CLASS_DEFS[name]
+    except:
+        return None
+
+def registerClass(name, clazz):
+    CLASS_DEFS[name] = clazz
 
 def boaEval(node, env=None):
     nodeType = node.nodeType
@@ -95,6 +111,8 @@ def boaEval(node, env=None):
                 return propertyAssignStatement(node, env)
             else:
                 return newError("Identifier not valid: %s" % node.identifier)
+        elif stmtType == STATEMENT_TYPE_CLASS:
+            return evalClassStatement(node, env)
     elif nodeType == NODE_TYPE_EXPRESSION:
         exprType = node.expressionType
         if exprType == EXPRESSION_TYPE_INT_LIT:
@@ -295,6 +313,26 @@ def assignStatement(node, env):
         return NULL
     except Exception as e:
         return newError(e.message)
+
+def evalClassStatement(node, env):
+    className = node.name
+    clazz = lookupClass(className)
+    if clazz:
+        return newError("Class already defined: %s" % clazz.name)
+
+    methods = {}
+    for methodStatement in node.methodStatements:
+        method = evalMethodStatement(methodStatement, env)
+        #methods.append(method)
+        methods[methodStatement.name] = method
+
+    clazz = newClass(className, methods, env)
+    registerClass(className, clazz)
+
+    return NULL
+
+def evalMethodStatement(node, env):
+    return newFunction(node.parameters, node.body, env)
 
 def evalWhileStatement(node, env):
     result = NULL
@@ -515,7 +553,10 @@ def applyFunction(function, args):
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_FUNCTION:
         return function.func(args)
     elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD:
-        return function.call(args)
+        return function.func(args)
+    elif function.objectType == OBJECT_TYPES.OBJECT_TYPE_CLASS:
+        constructor = function.getConstructorByArgNum(len(args))
+        return constructor.func(args)
 
     return newError("Cannot call: %s" % function.objectType)
 
@@ -571,6 +612,10 @@ def evalIdentifier(node, env):
         bfn = getBuiltinFunction(node.value)
         if bfn:
             return bfn
+        else:
+            clazz = lookupClass(node.value)
+            if clazz:
+                return clazz
         return newError("Identifier not found: %s" % node.value)
     return val
 

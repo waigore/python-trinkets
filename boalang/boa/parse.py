@@ -362,29 +362,29 @@ class Parser(object):
         if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
             return None
 
-        methodStatements = self.parseClassDefinition()
+        methodStatements = self.parseClassDefinition(className)
 
-        #if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_RBRACE):
-        #    return None
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
 
         classStatement = ClassStatement(classToken, className, methodStatements)
         return classStatement
 
-    def parseClassDefinition(self):
+    def parseClassDefinition(self, className):
         lbrace = self.curToken
         statements = []
 
         self.nextToken()
         while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and \
                 not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_EOF):
-            statement = self.parseMethodStatement()
+            statement = self.parseMethodStatement(className)
             if statement is not None:
                 statements.append(statement)
             self.nextToken()
 
         return statements
 
-    def parseMethodStatement(self):
+    def parseMethodStatement(self, className):
         if not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT):
             self.invalidMethodNameError(self.curToken)
             return None
@@ -403,7 +403,7 @@ class Parser(object):
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
 
-        methodStatement = MethodStatement(methodToken, methodToken.literal, parameters, body)
+        methodStatement = MethodStatement(methodToken, className, methodToken.literal, parameters, body)
         return methodStatement
 
     def parseExpressionStatement(self):

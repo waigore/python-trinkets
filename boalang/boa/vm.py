@@ -392,7 +392,7 @@ class VM(object):
 
     def callBuiltinMethod(self, fn, numArgs):
         args = self.stack[self.sp-numArgs:self.sp]
-        result = fn.call(args)
+        result = fn.func(args)
         self.sp = self.sp - 1 - numArgs
         self.push(result)
         self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop

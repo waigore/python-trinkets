@@ -21,6 +21,8 @@ OBJECT_TYPE_RETURN_VALUE = 'OBJECT_TYPE_RETURN_VALUE'
 OBJECT_TYPE_CONTINUE = 'OBJECT_TYPE_CONTINUE'
 OBJECT_TYPE_BREAK = 'OBJECT_TYPE_BREAK'
 OBJECT_TYPE_ERROR = 'OBJECT_TYPE_ERROR'
+OBJECT_TYPE_CLASS = 'OBJECT_TYPE_CLASS'
+OBJECT_TYPE_CLASS_INSTANCE = 'OBJECT_TYPE_CLASS_INSTANCE'
 
 class NoSuchObjectTypeError(Exception): pass
 
@@ -61,6 +63,8 @@ OBJECT_TYPES = DictLikeStruct({
     OBJECT_TYPE_BUILTIN_FUNCTION: BoaObjectType(OBJECT_TYPE_BUILTIN_FUNCTION, "builtinFunction"),
     OBJECT_TYPE_BUILTIN_METHOD: BoaObjectType(OBJECT_TYPE_BUILTIN_METHOD, "builtinMethod"),
     OBJECT_TYPE_CLOSURE: BoaObjectType(OBJECT_TYPE_CLOSURE, "closure"),
+    OBJECT_TYPE_CLASS: BoaObjectType(OBJECT_TYPE_CLASS, "class"),
+    OBJECT_TYPE_CLASS_INSTANCE: BoaObjectType(OBJECT_TYPE_CLASS_INSTANCE, "classInstance"),
 })
 
 def newObject(typName, *args):
@@ -94,6 +98,12 @@ def newFunction(params, body, env):
 
 def newMethod(instance, params, body, env):
     return newObject(OBJECT_TYPE_METHOD, instance, params, body, env)
+
+def newClass(name, methods, env):
+    return newObject(OBJECT_TYPE_CLASS, name, methods, env)
+
+def newClassInstance(clazz):
+    return newObject(OBJECT_TYPE_CLASS_INSTANCE, clazz)
 
 def newCompiledFunction(instr, numLocals=0, numParameters=0):
     return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr, numLocals, numParameters)
@@ -148,6 +158,46 @@ class BoaObject(object):
 
     def hashcode(self):
         return hash(self.value)
+
+class BoaClass(BoaObject):
+    def __init__(self, name, methods, env):
+        super(BoaClass, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLASS)
+        self.name = name
+        self.methods = methods #dict of <name, BoaFunction> entries
+        self.constructors = {0: BoaBuiltinMethod('constructor', self, self.constructor_default)}
+        self.env = env
+
+    def getConstructorByArgNum(self, argNum):
+        try:
+            return self.constructors[argNum]
+        except:
+            return newError("No constructor with %d arguments found" % argNum)
+
+    def constructor_default(self, args):
+        if len(args) != 0:
+            return newError("Default constructor takes no arguments. Got %d" % len(args))
+        instance = newClassInstance(self)
+        for methodName, unboundMethod in self.methods.items():
+            boundMethod = newMethod(instance, unboundMethod.parameters, unboundMethod.body, self.env)
+            instance.setAttribute(methodName, boundMethod)
+        return instance
+
+    def __repr__(self):
+        return "<class %s>" % (self.name)
+
+    def inspect(self):
+        return "<class %s>" % (self.name)
+
+class BoaClassInstance(BoaObject):
+    def __init__(self, clazz):
+        super(BoaClassInstance, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLASS_INSTANCE)
+        self.clazz = clazz
+
+    def __repr__(self):
+        return '<classInstance of %s>' % (self.clazz.name)
+
+    def inspect(self):
+        return '<classInstance of %s>' % (self.clazz.name)
 
 class BoaInteger(BoaObject):
     def __init__(self, value):
@@ -300,14 +350,12 @@ class BoaClosure(BoaObject):
         )
 
 class BoaBuiltinMethod(BoaObject):
-    def __init__(self, name, instance, func):
+    def __init__(self, name, instance, func, takesEnv=False):
         super(BoaBuiltinMethod, self).__init__(OBJECT_TYPES.OBJECT_TYPE_BUILTIN_METHOD)
         self.name = name
         self.instance = instance
         self.func = func
-
-    def call(self, *args):
-        return self.func(*args)
+        self.takesEnv = takesEnv
 
     def __repr__(self):
         return '<builtinMethod %s of %s (bound)>' % (self.name, self.instance.objectType)
@@ -506,4 +554,6 @@ OBJECT_CONSTRUCTORS = DictLikeStruct({
     OBJECT_TYPE_HASH: BoaHash,
     OBJECT_TYPE_COMPILED_FUNCTION: BoaCompiledFunction,
     OBJECT_TYPE_CLOSURE: BoaClosure,
+    OBJECT_TYPE_CLASS: BoaClass,
+    OBJECT_TYPE_CLASS_INSTANCE: BoaClassInstance,
 })

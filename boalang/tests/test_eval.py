@@ -191,6 +191,17 @@ class TestEval(unittest.TestCase):
             self.assertEqual(result.objectType, expectedType)
             self.assertEqual(result.value, expectedValue)
 
+    def test_classes(self):
+        exprs = [
+            ("class A { size() { return this.numItems; } }; let a = A(); a.numItems = 4; a.size()", OBJECT_TYPES.OBJECT_TYPE_INT, 4),
+        ]
+
+        for code, expectedType, expectedValue in exprs:
+            env = Environment()
+            result = env.evaluate(code)
+            self.assertEqual(result.objectType, expectedType)
+            self.assertEqual(result.value, expectedValue)
+
     def test_evalErrors(self):
         exprs = [
             ("true + false", OBJECT_TYPES.OBJECT_TYPE_ERROR),
