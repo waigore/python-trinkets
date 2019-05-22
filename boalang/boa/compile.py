@@ -13,6 +13,8 @@ from .ast import (
     STATEMENT_TYPE_FOR,
     STATEMENT_TYPE_BREAK,
     STATEMENT_TYPE_CONTINUE,
+    STATEMENT_TYPE_CLASS,
+    STATEMENT_TYPE_METHOD,
     EXPRESSION_TYPE_INT_LIT,
     EXPRESSION_TYPE_NULL_LIT,
     EXPRESSION_TYPE_STR_LIT,
@@ -83,6 +85,8 @@ from .code import (
     OPGETATTR,
     OPSETATTR,
     OPGETINSTANCE,
+    OPDEFCLASS,
+    OPGETCLASS,
 )
 from .symbol import (
     SymbolTable,
@@ -161,6 +165,28 @@ class Compiler(object):
             self.emit(OPSETBLOCK, s.scopeDiff, s.index)
         else:
             raise BoaCompilerError("Cannot assign symbol at current scope: %s" % s.name)
+
+    def compileClasses(self, node):
+        nodeType = node.nodeType
+        if nodeType != NODE_TYPE_PROGRAM:
+            raise BoaCompilerError("Classes must be compiled from the root program node")
+        for s in node.statements:
+            if s.statementType == STATEMENT_TYPE_CLASS:
+                self.compileClassStatement(s)
+
+    def compileClassStatement(self, classStatement):
+        try:
+            s = self.symbolTable.resolve(classStatement.name)
+            if s:
+                raise BoaCompilerError("Class already defined: %s" % classStatement.name)
+        except:
+            pass
+        self.symbolTable.defineClassName(classStatement.name)
+        for methodStatement in classStatement.methodStatements:
+            self.compileMethodStatement(methodStatement)
+
+    def compileMethodStatement(self, methodStatment):
+        pass
 
     def compile(self, node):
         nodeType = node.nodeType

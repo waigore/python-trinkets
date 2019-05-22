@@ -50,6 +50,8 @@ OPSETBLOCK = b'\x2D'
 OPGETATTR = b'\x2E'
 OPSETATTR = b'\x2F'
 OPGETINSTANCE = b'\x30'
+OPDEFCLASS = b'\x31'
+OPGETCLASS = b'\x32'
 
 class BoaNoSuchOpcodeError(Exception): pass
 
@@ -107,6 +109,8 @@ DEFINITIONS = DictLikeStruct({
     OPGETATTR: Definition("OpGetAttr", []),
     OPSETATTR: Definition("OpSetAttr", []),
     OPGETINSTANCE: Definition("OpGetInstance", []),
+    OPDEFCLASS: Definition("OpDefClass", [2]),
+    OPGETCLASS: Definition("OpGetClass", [2]),
 })
 
 def lookupOpcode(b):

@@ -5,6 +5,7 @@ BUILTIN_SCOPE = "BUILTIN_SCOPE"
 FREE_SCOPE = "FREE_SCOPE"
 BLOCK_SCOPE = "BLOCK_SCOPE"
 FUNCTION_SCOPE = "FUNCTION_SCOPE"
+CLASS_SCOPE = "CLASS_SCOPE"
 
 class SymbolNotFoundError(Exception): pass
 
@@ -19,6 +20,7 @@ class SymbolTable(object):
     def __init__(self, outer=None, isFunction=False):
         self.store = {} #maps strings to Symbols
         self.freeSymbols = [] #list of Symbols
+        self.numClasses = 0
         self.numDefinitions = 0
         self.outer = outer #Enclosing SymbolTable
         self.isFunction = isFunction
@@ -33,9 +35,16 @@ class SymbolTable(object):
         self.numDefinitions += 1
         return symbol
 
+    def defineClassName(self, name):
+        symbol = Symbol(name, CLASS_SCOPE, self.numClasses)
+        self.store[name] = symbol
+        self.numClasses += 1
+        return symbol
+
     def defineFunctionName(self, name):
         symbol = Symbol(name, FUNCTION_SCOPE, 0)
         self.store[name] = symbol
+        return symbol
 
     def defineFree(self, origSymbol):
         self.freeSymbols.append(origSymbol)
@@ -54,7 +63,7 @@ class SymbolTable(object):
         if self.outer is None:
             raise SymbolNotFoundError(name)
         scope, sym, sd, isF = self.outer.innerResolve(name, scopeDiff+1, self.isFunction or fnScopeInbtwn)
-        if sym.scope in [GLOBAL_SCOPE, BUILTIN_SCOPE]:
+        if sym.scope in [GLOBAL_SCOPE, BUILTIN_SCOPE, CLASS_SCOPE]:
             return scope, sym, sd, isF
         elif sym.scope == LOCAL_SCOPE:
             if not self.isFunction and not fnScopeInbtwn:
