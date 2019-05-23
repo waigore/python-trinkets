@@ -194,6 +194,8 @@ class TestEval(unittest.TestCase):
     def test_classes(self):
         exprs = [
             ("class A { size() { return this.numItems; } }; let a = A(); a.numItems = 4; a.size()", OBJECT_TYPES.OBJECT_TYPE_INT, 4),
+            ("class Point { constructor(x, y) { this.x = x; this.y = y; } }; let p = Point(1, 2); p.x + p.y", OBJECT_TYPES.OBJECT_TYPE_INT, 3),
+            ("class Person { constructor(name) { this.setName(name); } setName(name) { this.name = name; } getName() { return this.name;} }; let p = Person('Jekyll'); p.getName()", OBJECT_TYPES.OBJECT_TYPE_STRING, "Jekyll"),
         ]
 
         for code, expectedType, expectedValue in exprs:

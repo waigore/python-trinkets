@@ -237,6 +237,7 @@ def evalAttributeAssignment(obj, attrName, val, env):
         #    return newError("Instance method cannot be rebound: %s.%s" % (attrName, obj.inspect()))
         else:
             obj.setAttribute(attrName, val)
+        return NULL
     except Exception as e:
         return newError("Could not assign value to attribute %s of %s" % (attrName, obj.inspect()))
 
@@ -326,7 +327,11 @@ def evalClassStatement(node, env):
         #methods.append(method)
         methods[methodStatement.name] = method
 
-    clazz = newClass(className, methods, env)
+    if node.constructorStatement:
+        cs = node.constructorStatement
+        constructorEvaluated = newFunction(cs.parameters, cs.body, env)
+
+    clazz = newClass(className, node.constructorStatement, methods, env)
     registerClass(className, clazz)
 
     return NULL

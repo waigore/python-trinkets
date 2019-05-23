@@ -362,12 +362,12 @@ class Parser(object):
         if not self.expectPeek(TOKEN_TYPES.TOKEN_TYPE_LBRACE):
             return None
 
-        methodStatements = self.parseClassDefinition(className)
+        constructorStatement, methodStatements = self.parseClassDefinition(className)
 
         if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
             self.nextToken()
 
-        classStatement = ClassStatement(classToken, className, methodStatements)
+        classStatement = ClassStatement(classToken, className, constructorStatement, methodStatements)
         return classStatement
 
     def parseClassDefinition(self, className):
@@ -375,14 +375,18 @@ class Parser(object):
         statements = []
 
         self.nextToken()
+        constructorStatement = None
         while not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_RBRACE) and \
                 not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_EOF):
             statement = self.parseMethodStatement(className)
             if statement is not None:
-                statements.append(statement)
+                if statement.name == 'constructor':
+                    constructorStatement = statement
+                else:
+                    statements.append(statement)
             self.nextToken()
 
-        return statements
+        return constructorStatement, statements
 
     def parseMethodStatement(self, className):
         if not self.curTokenIs(TOKEN_TYPES.TOKEN_TYPE_IDENT):

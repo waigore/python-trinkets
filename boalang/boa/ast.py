@@ -144,9 +144,10 @@ class ForStatement(Statement):
         return 'for (%s in %s) %s' % (self.iterator, self.iterable, self.blockStatement)
 
 class ClassStatement(Statement):
-    def __init__(self, token, name, methodStatements):
+    def __init__(self, token, name, constructorStatement, methodStatements):
         super(ClassStatement, self).__init__(STATEMENT_TYPE_CLASS, token, name)
         self.methodStatements = methodStatements
+        self.constructorStatement = constructorStatement
 
     @property
     def name(self):

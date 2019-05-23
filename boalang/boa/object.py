@@ -101,8 +101,8 @@ def newFunction(params, body, env):
 def newMethod(instance, params, body, env):
     return newObject(OBJECT_TYPE_METHOD, instance, params, body, env)
 
-def newClass(name, methods, env):
-    return newObject(OBJECT_TYPE_CLASS, name, methods, env)
+def newClass(name, constructor, methods, env):
+    return newObject(OBJECT_TYPE_CLASS, name, constructor, methods, env)
 
 def newClassInstance(clazz):
     return newObject(OBJECT_TYPE_CLASS_INSTANCE, clazz)
@@ -165,12 +165,12 @@ class BoaObject(object):
         return hash(self.value)
 
 class BoaClass(BoaObject):
-    def __init__(self, name, methods, env):
+    def __init__(self, name, constructor, methods, env):
         super(BoaClass, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLASS)
         self.name = name
         self.methods = methods #dict of <name, BoaFunction> entries
         #self.constructors = {0: BoaBuiltinMethod('constructor', self, self.constructor_default)}
-        self.constructor = None
+        self.constructor = constructor
         self.env = env
 
     def createInstance(self):
