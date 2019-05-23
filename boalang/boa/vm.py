@@ -25,6 +25,7 @@ from .code import (
     OPINDEX,
     OPCALL,
     OPRETURNVALUE,
+    OPRETURN,
     OPSETLOCAL,
     OPGETLOCAL,
     OPSETINDEX,
@@ -218,12 +219,17 @@ class VM(object):
                 self.push(NULL)
             elif op == OPDEFCLASS:
                 classIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
-                numMethods = readUint16(self.currentInstr()[self.currentFrameIp()+3:])
-                self.incrCurrentFrameIp(4)
+                numConstructors = readUint16(self.currentInstr()[self.currentFrameIp()+3:])
+                numMethods = readUint16(self.currentInstr()[self.currentFrameIp()+5:])
+                self.incrCurrentFrameIp(6)
                 className = self.pop()
-                clazz = self.buildClass(className, self.sp-numMethods, self.sp)
+                clazz = self.buildClass(
+                            className,
+                            self.sp-numConstructors, self.sp, #constructor indexes
+                            self.sp-numConstructors-numMethods, self.sp-numConstructors #method indexes
+                )
                 self.classDefs[classIndex] = clazz
-                self.sp = self.sp-numMethods
+                self.sp = self.sp-numConstructors-numMethods
             elif op == OPGETCLASS:
                 classIndex = readUint16(self.currentInstr()[self.currentFrameIp()+1:])
                 self.incrCurrentFrameIp(2)
@@ -352,12 +358,20 @@ class VM(object):
                     self.push(val)
                 except StopIteration:
                     raise BoaVMError("Iterator has no more elements")
+            elif op == OPRETURN:
+                frame = self.popLastFrameOfType(FRAME_TYPE_FUNCTION)
+                if frame is not None: #if frame is None then the effect is the same as a NOP
+                    self.sp = frame.basePointer - 1
             elif op == OPRETURNVALUE:
                 returnValue = self.pop()
                 frame = self.popLastFrameOfType(FRAME_TYPE_FUNCTION)
                 if frame is not None: #if frame is None then the effect is the same as a NOP
+                    isConstructor = frame.cl.isConstructor
                     self.sp = frame.basePointer - 1
-                    self.push(returnValue)
+                    if not isConstructor:
+                        self.push(returnValue) #returned values from a constructor don't get pushed back on the stack
+                    else:
+                        self.push(frame.cl.instance)
             elif op == OPBLOCKRETURN:
                 returnValue = self.pop()
                 frame = self.popFrame()
@@ -417,11 +431,15 @@ class VM(object):
         self.incrCurrentFrameIp(1) #increment needs to happen here because the ip is not updated in the outer while loop
 
     def callCompiledClass(self, clazz, numArgs):
-        args = self.stack[self.sp-numArgs:self.sp]
         instance, constructor = clazz.createInstance()
-        self.sp = self.sp - 1 - numArgs
-        self.push(instance)
-        self.incrCurrentFrameIp(1)
+        if constructor is None:
+            if numArgs != 0:
+                raise BoaVMError('Default constructor for %s does not expect arguments. Got %d' % (clazz.inspect(), numArgs))
+            self.sp = self.sp - 1
+            self.push(instance)
+            self.incrCurrentFrameIp(1)
+        else:
+            self.callClosure(constructor, numArgs)
 
     def callBlock(self):
         cl = self.stack[self.sp-1]
@@ -441,13 +459,20 @@ class VM(object):
         elements = self.stack[startIndex:endIndex]
         return newArray(elements)
 
-    def buildClass(self, className, startIndex, endIndex):
+    def buildClass(self, className, constructorStartIndex, constructorEndIndex, methodStartIndex, methodEndIndex):
+        if (constructorEndIndex - constructorStartIndex) not in [0, 2]:
+            raise BoaVMError("Invalid number of constructors: %d" % (constructorEndIndex - constructorStartIndex)/2)
+        if constructorStartIndex < constructorEndIndex:
+            constructor = self.stack[constructorStartIndex+1]
+        else:
+            constructor = None
+
         methodNamePairs = {}
-        for i in range(startIndex, endIndex, 2):
+        for i in range(methodStartIndex, methodEndIndex, 2):
             name = self.stack[i]
             method = self.stack[i+1]
             methodNamePairs[name.value] = method
-        return newCompiledClass(className.value, methodNamePairs)
+        return newCompiledClass(className.value, constructor, methodNamePairs)
 
     def buildHash(self, startIndex, endIndex):
         pairs = []

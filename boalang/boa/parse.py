@@ -165,6 +165,7 @@ class Parser(object):
 
     def nestedClassDefError(self, name):
         msg = 'Class cannot be defined in nested scope: %s' % name
+        self.errors.append(ParserError(msg))
 
     def noPrefixParseFnError(self, tokenType):
         msg = 'Unparseable token %s found' % tokenType
@@ -274,6 +275,10 @@ class Parser(object):
 
     def parseReturnStatement(self):
         returnToken = self.curToken
+
+        if self.peekTokenIs(TOKEN_TYPES.TOKEN_TYPE_SEMICOLON):
+            self.nextToken()
+            return ReturnStatement(returnToken, None)
 
         self.nextToken()
 

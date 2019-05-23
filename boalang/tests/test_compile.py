@@ -469,7 +469,7 @@ class TestCompilation(unittest.TestCase):
         helper = CompileHelper(self, 'class A {}')
         helper.checkInstructionsExpected([
             makeInstr(OPCONSTANT, 0),
-            makeInstr(OPDEFCLASS, 0, 0),
+            makeInstr(OPDEFCLASS, 0, 0, 0),
         ])
 
         helper = CompileHelper(self, 'class A { m1(x) {}; m2(y, z) {}; m3(a) {} }')
@@ -481,7 +481,7 @@ class TestCompilation(unittest.TestCase):
             makeInstr(OPCONSTANT, 4),
             makeInstr(OPCLOSURE, 5, 0),
             makeInstr(OPCONSTANT, 6),
-            makeInstr(OPDEFCLASS, 0, 6),
+            makeInstr(OPDEFCLASS, 0, 0, 6),
         ])
 
         #helper = CompileHelper(self, 'class A { m1(x) {}; m2(y, z) {}; m3(a) {} }; let a = A()')

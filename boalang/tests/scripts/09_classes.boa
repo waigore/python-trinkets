@@ -1,0 +1,17 @@
+class Person {
+  constructor(name, age, occupation) {
+    this.name = name;
+    this.age = age;
+    this.occupation = occupation;
+  }
+
+  greet(other) {
+    return 'Greetings ' + other.name + ', my name is ' + this.name + ' and I am a ' + this.occupation + '.';
+  }
+}
+
+let john = Person('John', 34, 'programmer');
+let jack = Person('Jack', 34, 'manager');
+
+let johnGreeting = john.greet(jack);
+let jackGreeting = jack.greet(john);

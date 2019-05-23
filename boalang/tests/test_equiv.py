@@ -52,6 +52,10 @@ SCRIPTS = [
         ('johnGreeting', OBJECT_TYPES.OBJECT_TYPE_STRING, '"Greetings Jack, my name is John and I am a programmer."'),
         ('jackGreeting', OBJECT_TYPES.OBJECT_TYPE_STRING, '"Greetings John, my name is Jack and I am a manager."'),
     ]),
+    Script('09_classes.boa', [
+        ('johnGreeting', OBJECT_TYPES.OBJECT_TYPE_STRING, '"Greetings Jack, my name is John and I am a programmer."'),
+        ('jackGreeting', OBJECT_TYPES.OBJECT_TYPE_STRING, '"Greetings John, my name is Jack and I am a manager."'),
+    ]),
 ]
 
 class VMHelper(object):

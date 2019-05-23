@@ -268,5 +268,12 @@ class TestVM(unittest.TestCase):
         """)
         helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_INT, '30')
 
+        helper = VMHelper(self, """
+            class Person { constructor(name) { this.setName(name); } setName(name) { this.name = name; } getName() { return this.name;} };
+            let p = Person('Jekyll');
+            p.getName()
+        """)
+        helper.checkLastPoppedExpected(OBJECT_TYPES.OBJECT_TYPE_STRING, '"Jekyll"')
+
 if __name__ == '__main__':
     unittest.main()

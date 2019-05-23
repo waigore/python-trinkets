@@ -175,9 +175,15 @@ class Compiler(object):
         for methodStatement in classStatement.methodStatements:
             self.compileMethodStatement(methodStatement)
 
+        if classStatement.constructorStatement:
+            self.compileMethodStatement(classStatement.constructorStatement)
+            numConstructors = 1
+        else:
+            numConstructors = 0
+
         self.emit(OPCONSTANT, self.addConstant(newString(classStatement.name)))
 
-        self.emit(OPDEFCLASS, classIndex, len(classStatement.methodStatements)*2)
+        self.emit(OPDEFCLASS, classIndex, numConstructors*2, len(classStatement.methodStatements)*2)
 
     def compileMethodStatement(self, methodStatement):
         self.emit(OPCONSTANT, self.addConstant(newString(methodStatement.name)))
@@ -309,8 +315,11 @@ class Compiler(object):
             elif stmtType == STATEMENT_TYPE_BREAK:
                 self.emit(OPBREAK)
             elif stmtType == STATEMENT_TYPE_RETURN:
-                self.compile(node.value)
-                self.emit(OPRETURNVALUE)
+                if node.value:
+                    self.compile(node.value)
+                    self.emit(OPRETURNVALUE)
+                else:
+                    self.emit(OPRETURN)
         elif nodeType == NODE_TYPE_EXPRESSION:
             exprType = node.expressionType
             if exprType == EXPRESSION_TYPE_INT_LIT:

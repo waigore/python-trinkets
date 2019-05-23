@@ -110,14 +110,14 @@ def newClassInstance(clazz):
 def newCompiledFunction(instr, numLocals=0, numParameters=0):
     return newObject(OBJECT_TYPE_COMPILED_FUNCTION, instr, numLocals, numParameters)
 
-def newCompiledClass(name, methods):
-    return newObject(OBJECT_TYPE_COMPILED_CLASS, name, methods)
+def newCompiledClass(name, constructor, methods):
+    return newObject(OBJECT_TYPE_COMPILED_CLASS, name, constructor, methods)
 
 def newBuiltinFunction(name, func):
     return newObject(OBJECT_TYPE_BUILTIN_FUNCTION, name, func)
 
-def newClosure(compiledFunction, freeVariables, instance=None):
-    return newObject(OBJECT_TYPE_CLOSURE, compiledFunction, freeVariables, instance)
+def newClosure(compiledFunction, freeVariables, instance=None, isConstructor=False):
+    return newObject(OBJECT_TYPE_CLOSURE, compiledFunction, freeVariables, instance, isConstructor)
 
 class BoaObject(object):
     def __init__(self, typ):
@@ -191,10 +191,10 @@ class BoaClass(BoaObject):
         return "<class %s>" % (self.name)
 
 class BoaCompiledClass(BoaObject):
-    def __init__(self, name, methods):
+    def __init__(self, name, constructor, methods):
         super(BoaCompiledClass, self).__init__(OBJECT_TYPES.OBJECT_TYPE_COMPILED_CLASS)
         self.methods = methods #dict of <name, BoaFunction> entries
-        self.constructor = None
+        self.constructor = constructor
         self.name = name
 
     def createInstance(self):
@@ -203,7 +203,7 @@ class BoaCompiledClass(BoaObject):
             boundMethod = newClosure(unboundMethod.compiledFunction, unboundMethod.freeVariables, instance=instance)
             instance.setAttribute(methodName, boundMethod)
         if self.constructor:
-            boundConstructor = newClosure(self.constructor.compiledFunction, self.constructor.freeVariables, instance=instance)
+            boundConstructor = newClosure(self.constructor.compiledFunction, self.constructor.freeVariables, instance=instance, isConstructor=True)
         else:
             boundConstructor = None
         return instance, boundConstructor
@@ -355,14 +355,16 @@ class BoaMethod(BoaObject):
         return '<boaMethod of %s (bound)>' % (self.instance.objectType)
 
 class BoaClosure(BoaObject):
-    def __init__(self, compiledFunction, freeVariables, instance=None):
+    def __init__(self, compiledFunction, freeVariables, instance=None, isConstructor=False):
         super(BoaClosure, self).__init__(OBJECT_TYPES.OBJECT_TYPE_CLOSURE)
         self.compiledFunction = compiledFunction
         self.freeVariables = freeVariables
         self.instance = instance
+        self.isConstructor = isConstructor
 
     def __repr__(self):
-        return '<closure %s%s free=[%s]>' % (
+        return '<closure%s %s%s free=[%s]>' % (
+            '(constructor)' if self.isConstructor else '',
             self.instance + '.' if self.instance else '',
             self.compiledFunction,
             ', '.join([free.inspect() for free in self.freeVariables])

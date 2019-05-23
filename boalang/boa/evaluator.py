@@ -89,6 +89,8 @@ def boaEval(node, env=None):
         elif stmtType == STATEMENT_TYPE_FOR:
             return evalForStatement(node, env)
         elif stmtType == STATEMENT_TYPE_RETURN:
+            if node.value is None:
+                return newReturnValue(NULL)
             val = boaEval(node.value, env)
             if isError(val):
                 return val
@@ -318,8 +320,8 @@ def assignStatement(node, env):
 def evalClassStatement(node, env):
     className = node.name
     clazz = lookupClass(className)
-    if clazz:
-        return newError("Class already defined: %s" % clazz.name)
+    #if clazz:
+    #    return newError("Class already defined: %s" % clazz.name)
 
     methods = {}
     for methodStatement in node.methodStatements:
