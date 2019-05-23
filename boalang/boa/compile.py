@@ -171,21 +171,13 @@ class Compiler(object):
         else:
             raise BoaCompilerError("Cannot assign symbol at current scope: %s" % s.name)
 
-    def compileClassStatement(self, classStatement):
-        try:
-            s = self.symbolTable.resolve(classStatement.name)
-            if s:
-                raise BoaCompilerError("Class already defined: %s" % classStatement.name)
-        except:
-            pass
-
-        clazzSymbol = self.symbolTable.defineClassName(classStatement.name)
+    def compileClassStatement(self, classStatement, classIndex):
         for methodStatement in classStatement.methodStatements:
             self.compileMethodStatement(methodStatement)
 
         self.emit(OPCONSTANT, self.addConstant(newString(classStatement.name)))
 
-        self.emit(OPDEFCLASS, clazzSymbol.index, len(classStatement.methodStatements)*2)
+        self.emit(OPDEFCLASS, classIndex, len(classStatement.methodStatements)*2)
 
     def compileMethodStatement(self, methodStatement):
         self.emit(OPCONSTANT, self.addConstant(newString(methodStatement.name)))
@@ -199,8 +191,8 @@ class Compiler(object):
             otherStatements = [statement for statement in node.statements
                                 if statement.statementType != STATEMENT_TYPE_CLASS]
             for s in classStatements:
-                self.compileClassStatement(s)
-            for s in otherStatements:
+                clazzSymbol = self.symbolTable.defineClassName(s.name)
+            for s in node.statements:
                 self.compile(s)
         elif nodeType == NODE_TYPE_STATEMENT:
             stmtType = node.statementType
@@ -210,6 +202,9 @@ class Compiler(object):
             elif stmtType == STATEMENT_TYPE_BLOCK:
                 for statement in node.statements:
                     self.compile(statement)
+            elif stmtType == STATEMENT_TYPE_CLASS:
+                clazzSymbol = self.symbolTable.resolve(node.name)
+                self.compileClassStatement(node, clazzSymbol.index)
             elif stmtType == STATEMENT_TYPE_LET:
                 symbol = self.symbolTable.define(node.identifier.value)
                 self.compile(node.value)
