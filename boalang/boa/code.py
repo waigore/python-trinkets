@@ -1,4 +1,9 @@
-from .util import DictLikeStruct
+from .util import (
+    DictLikeStruct,
+    readUint16,
+    readUint8,
+    readUint,
+)
 
 OPNOP = b'\xFF'
 OPCONSTANT = b'\x00'
@@ -149,15 +154,6 @@ def formatInstr(definition, operands):
     if len(operands) != operandCount:
         raise BoaOperandError("Operand number mismatch. Got %d, want %d" % (len(operands), len(definition.operandWidths)))
     return "%s%s%s" % (definition.name, ' ' if operands else '', ' '.join(['%d' % operand for operand in operands]))
-
-def readUint16(instr):
-    return readUint(instr, 2)
-
-def readUint8(instr):
-    return readUint(instr, 1)
-
-def readUint(instr, width):
-    return int.from_bytes(instr[0:width], byteorder='big')
 
 def readOperands(definition, instr):
     operands = []

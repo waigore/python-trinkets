@@ -18,3 +18,15 @@ class DictLikeStruct:
 
     def toDict(self):
         return dict(self.__dict__)
+
+def readUint16(instr):
+    return readUint(instr, 2)
+
+def readUint8(instr):
+    return readUint(instr, 1)
+
+def readUint(instr, width):
+    return int.from_bytes(instr[0:width], byteorder='big')
+
+def readInt(instr, width):
+    return int.from_bytes(instr[0:width], byteorder='big', signed=True)
