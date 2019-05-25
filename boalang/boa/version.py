@@ -1,0 +1,2 @@
+VERSION_STRING = '1.0.0-beta'
+BUILD_NUMBER = 1

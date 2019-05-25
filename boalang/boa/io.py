@@ -18,6 +18,12 @@ from .object import (
     FALSE,
     NULL,
 )
+from .version import VERSION_STRING, BUILD_NUMBER
+
+HDRVERS = b'\xF0'
+HDRCONS = b'\xF1'
+HDRGLOB = b'\xF2'
+HDRCODE = b'\xF3'
 
 DEFINT = b'\xA0'
 DEFBOOL = b'\xA1'
@@ -33,6 +39,88 @@ DEFFUNC = b'\xA4'
 class BoaDeflateError(Exception): pass
 
 class BoaInflateError(Exception): pass
+
+class BoaBytecodeReadError(Exception): pass
+
+class BytecodeReader(object):
+    def __init__(self, instr):
+        self.instr = instr
+
+    def incrPointer(self, n):
+        self.pointer += n
+
+    def readHeaderOperand(self):
+        operand = readUint16(self.instr[self.pointer:])
+        self.incrPointer(2)
+        return operand
+
+    def read(self):
+        self.pointer = 0
+        while self.pointer < len(self.instr):
+            hdr = self.instr[self.pointer:self.pointer+1]
+            self.incrPointer(1)
+            if hdr == HDRVERS:
+                buildNumber = self.readHeaderOperand()
+                versionStringLen = self.readHeaderOperand()
+                versionString = self.instr[self.pointer:self.pointer+versionStringLen]
+                self.incrPointer(versionStringLen)
+                self.checkVersion(buildNumber, versionString)
+            elif hdr == HDRCONS:
+                constNum = self.readHeaderOperand()
+                self.readConstants(constNum)
+            elif hdr == HDRCODE:
+                codeLen = self.readHeaderOperand()
+                self.readCode(codeLen)
+
+    def checkVersion(self, buildNumber, versionString):
+        self.readBuildNumber = buildNumber
+        self.readVersionString = versionString.decode('ascii')
+        if buildNumber > BUILD_NUMBER:
+            raise BoaBytecodeReadError("Incompatible version: %d > mine (%d)" % (buildNumber, BUILD_NUMBER))
+
+    def readConstants(self, constNum):
+        constants = []
+        for i in range(constNum):
+            obj, bytesRead = inflate(self.instr[self.pointer:])
+            constants.append(obj)
+            self.incrPointer(bytesRead)
+        self.constants = constants
+
+    def readCode(self, codeLen):
+        self.codeInstr = self.instr[self.pointer:self.pointer+codeLen]
+        self.incrPointer(codeLen)
+
+class BytecodeWriter(object):
+    def __init__(self, bytecode):
+        self.bytecode = bytecode
+
+    def write(self):
+        versionHdr = self.writeVersion()
+        constSection = self.writeConstants()
+        codeSection = self.writeCode()
+        return versionHdr + constSection + codeSection
+
+    def writeHeaderOperand(self, operand):
+        return operand.to_bytes(2, byteorder='big')
+
+    def writeVersion(self):
+        bn = self.writeHeaderOperand(BUILD_NUMBER)
+        vslen = self.writeHeaderOperand(len(VERSION_STRING))
+        vs = VERSION_STRING.encode('ascii')
+        return HDRVERS + bn + vslen + vs
+
+    def writeConstants(self):
+        b = b''
+        for constant in self.bytecode.constants:
+            b += deflate(constant)
+        constNum = len(self.bytecode.constants)
+        return HDRCONS + self.writeHeaderOperand(constNum) + b
+
+    def writeCode(self):
+        instr = self.bytecode.instr
+        codeLen = len(instr)
+        return HDRCODE + self.writeHeaderOperand(codeLen) + instr
+
 
 class BoaIntInflater(object):
     def __init__(self):
@@ -147,7 +235,7 @@ def inflate(b):
         bytechunks.append(b[dataOffset:to])
         dataOffset += operands[i]
 
-    return inflater.inflate(bytechunks)
+    return inflater.inflate(bytechunks), dataOffset
 
 DEFLATERS = DictLikeStruct({
     OBJECT_TYPE_INT: BoaIntInflater(),

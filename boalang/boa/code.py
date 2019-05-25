@@ -5,7 +5,6 @@ from .util import (
     readUint,
 )
 
-OPNOP = b'\xFF'
 OPCONSTANT = b'\x00'
 OPADD = b'\x01'
 OPPOP = b'\x02'
@@ -68,7 +67,6 @@ class Definition(object):
         self.operandWidths = operandWidths
 
 DEFINITIONS = DictLikeStruct({
-    OPNOP: Definition("OpNop", []),
     OPCONSTANT: Definition("OpConstant", [2]),
     OPADD: Definition("OpAdd", []),
     OPPOP: Definition("OpPop", []),
