@@ -13,6 +13,7 @@ from .object import (
     OBJECT_TYPE_COMPILED_FUNCTION,
     newInteger,
     newString,
+    newCompiledFunction,
     TRUE,
     FALSE,
     NULL,
@@ -142,8 +143,9 @@ def inflate(b):
     dataOffset = 1 + inflater.numOperands*2
     bytechunks = []
     for i in range(inflater.numOperands):
-        to = dataOffset + operands[i]*2
+        to = dataOffset + operands[i]
         bytechunks.append(b[dataOffset:to])
+        dataOffset += operands[i]
 
     return inflater.inflate(bytechunks)
 
@@ -152,6 +154,7 @@ DEFLATERS = DictLikeStruct({
     OBJECT_TYPE_BOOLEAN: BoaBooleanInflater(),
     OBJECT_TYPE_NULL: BoaNullInflater(),
     OBJECT_TYPE_STRING: BoaStringInflater(),
+    OBJECT_TYPE_COMPILED_FUNCTION : BoaFunctionInflater(),
 })
 
 INFLATERS = DictLikeStruct({
@@ -159,4 +162,5 @@ INFLATERS = DictLikeStruct({
     DEFBOOL: BoaBooleanInflater(),
     DEFNULL: BoaNullInflater(),
     DEFSTR: BoaStringInflater(),
+    DEFFUNC: BoaFunctionInflater(),
 })

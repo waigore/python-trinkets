@@ -41,30 +41,8 @@ from boa.code import (
     makeInstr,
     formatInstrs,
 )
-from boa.compile import Compiler
-from boa.parse import Parser
 
-class CompileHelper(object):
-    def __init__(self, testCase, code):
-        self.code = code
-        self.testCase = testCase
-
-        self.parser = Parser(code)
-        program = self.parser.parseProgram()
-
-        self.compiler = Compiler()
-        self.compiler.compile(program)
-        self.bytecode = self.compiler.bytecode()
-
-    def checkInstructionsExpected(self, instructions):
-        self.testCase.assertEqual(self.bytecode.instructions, instructions)
-
-    def checkConstantsExpected(self, constants):
-        cVals = [c.value for c in self.bytecode.constants]
-        self.testCase.assertEqual(len(cVals), len(constants))
-        for c, expectedC in zip(cVals, constants):
-            self.testCase.assertEqual(c, expectedC)
-
+from helpers import CompileHelper
 
 class TestCompilation(unittest.TestCase):
     def test_opconstant(self):

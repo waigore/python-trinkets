@@ -3,8 +3,9 @@ import unittest
 import sys, os
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from boa import Environment, Compiler, VM, Parser
 from boa.object import OBJECT_TYPES
+
+from helpers import VMHelper, EnvHelper
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__)) + '/scripts'
 
@@ -57,44 +58,6 @@ SCRIPTS = [
         ('jackGreeting', OBJECT_TYPES.OBJECT_TYPE_STRING, '"Greetings John, my name is Jack and I am a manager."'),
     ]),
 ]
-
-class VMHelper(object):
-    def __init__(self, testCase, code):
-        self.code = code
-        self.testCase = testCase
-
-        self.parser = Parser(code)
-        program = self.parser.parseProgram()
-
-        self.compiler = Compiler()
-        self.compiler.compile(program)
-        self.bytecode = self.compiler.bytecode()
-
-        self.vm = VM(self.bytecode, self.compiler.symbolTable)
-        self.vm.run()
-
-        self.checkSanity()
-
-    def checkSanity(self):
-        #this WILL blow up if an errant opcode left something on the stack for example...
-        self.testCase.assertEqual(self.vm.sp, 0)
-        self.testCase.assertEqual(self.vm.frameIndex, 1)
-
-    def checkGlobalExpected(self, identifier, typ, value):
-        self.testCase.assertEqual(self.vm.getGlobal(identifier).objectType, typ)
-        self.testCase.assertEqual(self.vm.getGlobal(identifier).inspect(), value)
-
-class EnvHelper(object):
-    def __init__(self, testCase, code):
-        self.code = code
-        self.testCase = testCase
-
-        self.env = Environment()
-        self.env.evaluate(code)
-
-    def checkGlobalExpected(self, identifier, typ, value):
-        self.testCase.assertEqual(self.env.getGlobal(identifier).objectType, typ)
-        self.testCase.assertEqual(self.env.getGlobal(identifier).inspect(), value)
 
 class TestEquivEvalVM(unittest.TestCase):
     def runScriptAndAsserts(self, script, asserts):
