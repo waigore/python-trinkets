@@ -77,38 +77,54 @@ class LineIsland(object):
         return f'{self.value}'
 
 class LineSolver(object):
-    def __init__(self, board, line_orientation, location):
+    def __init__(self, board=None, line_orientation=LineOrientation.ACROSS, location=None, line=None, islands=None):
         self._board = board
         self.line_orientation = line_orientation
         self.location = location
         self._dirty = True
-        
-        self._init()
 
-    def _init(self):
-        if self.line_orientation == LineOrientation.ACROSS:
-            self._dimen = self._board.across
-            islands = self._board.down_islands[self.location]
+        if line:
+            self._dimen = len(line)
+            self._line = line
         else:
-            self._dimen = self._board.down
-            islands = self._board.across_islands[self.location]
+            if self.line_orientation == LineOrientation.ACROSS:
+                self._dimen = self._board.across
+                islands = self._board.down_islands[self.location]
+            elif self.line_orientation == LineOrientation.DOWN:
+                self._dimen = self._board.down
+                islands = self._board.across_islands[self.location]
+            else:
+                raise ValueError("Unknown line orientation: " + self.line_orientation)
 
-        self._init_line()
-        self._init_line_islands(islands)
+            self.update_from_board(self._board)
+
+        self._line_islands = self._create_line_islands(islands)
+        for island in self._line_islands:
+            island.init()
     
-    def _init_line(self):
-        self._line = []
+    @staticmethod
+    def from_board(board, line_orientation, location):
+        return LineSolver(board=board, line_orientation=line_orientation, location=location)
+
+    @staticmethod
+    def from_line(line, islands):
+        return LineSolver(line=line, islands=islands)
+
+    def update_from_board(self, board):
+        self._line = self._create_line_from_board(board)
+
+    def _create_line_from_board(self, board):
+        line = []
         for i in range(self._dimen):
             if self.line_orientation == LineOrientation.ACROSS:
                 x, y = i, self.location
             else:
                 x, y = self.location, i
-            self._line.append(self._board[x, y])
-    
-    def _init_line_islands(self, islands):
-        self._line_islands = [LineIsland(solver=self, island=island, position=i, dimen=self._dimen) for i, island in enumerate(islands)]
-        for island in self._line_islands:
-            island.init()
+            line.append(board[x, y])
+        return line
+
+    def _create_line_islands(self, islands):
+        return [LineIsland(solver=self, island=island, position=i, dimen=self._dimen) for i, island in enumerate(islands)]
 
     def get_islands_before(self, position):
         return self._line_islands[:position]
@@ -158,8 +174,6 @@ class LineSolver(object):
         return filled_islands
 
     def solve(self):
-        self._init_line()
-
         for island in self._line_islands:
             island.generate_possible_states()
             island.recalc_constraint_zone()

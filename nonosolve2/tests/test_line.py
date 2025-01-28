@@ -25,7 +25,7 @@ class TestLine(unittest.TestCase):
             ]
         }
         board = NonogramBoard(dimen=(5, 5), islands=islands)
-        line_solver = LineSolver(board, line_orientation=LineOrientation.ACROSS, location=0)
+        line_solver = LineSolver.from_board(board, line_orientation=LineOrientation.ACROSS, location=0)
         self.assertTrue(line_solver.dirty)
         l = str(line_solver)
         self.assertEqual(l, """
@@ -41,7 +41,7 @@ class TestLine(unittest.TestCase):
  *  *  *  *  *   1
 """.strip('\n'))
         
-        line_solver2 = LineSolver(board, line_orientation=LineOrientation.DOWN, location=0)
+        line_solver2 = LineSolver.from_board(board, line_orientation=LineOrientation.DOWN, location=0)
         line_solver2.solve()
         l2 = str(line_solver2)
         self.assertEqual(l2, """
@@ -51,7 +51,7 @@ class TestLine(unittest.TestCase):
              *   1
 """.strip('\n'))
         
-        line_solver3 = LineSolver(board, line_orientation=LineOrientation.ACROSS, location=2)
+        line_solver3 = LineSolver.from_board(board, line_orientation=LineOrientation.ACROSS, location=2)
         line_solver3.solve()
         l3 = str(line_solver3)
         self.assertEqual(l3, """
@@ -60,7 +60,7 @@ class TestLine(unittest.TestCase):
        *  *  *   1
 """.strip('\n'))
         
-        line_solver4 = LineSolver(board, line_orientation=LineOrientation.DOWN, location=1)
+        line_solver4 = LineSolver.from_board(board, line_orientation=LineOrientation.DOWN, location=1)
         line_solver4.solve()
         l4 = str(line_solver4)
         self.assertEqual(l4, """
