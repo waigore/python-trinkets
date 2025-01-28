@@ -30,6 +30,7 @@ class TestLine(unittest.TestCase):
         l = str(line_solver)
         self.assertEqual(l, """
 |  |  |  |  |  | 1 *
+ *  *  *  *  *   1
 """.strip('\n'))
         
         line_solver.solve()
@@ -57,6 +58,13 @@ class TestLine(unittest.TestCase):
 |  |  |  |  |  | 1 1
  *  *  *         1
        *  *  *   1
+""".strip('\n'))
+        
+        line_solver4 = LineSolver(board, line_orientation=LineOrientation.DOWN, location=1)
+        line_solver4.solve()
+        l4 = str(line_solver4)
+        self.assertEqual(l4, """
+|X |X |X |X |X |
 """.strip('\n'))
 
 if __name__ == '__main__':

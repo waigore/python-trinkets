@@ -37,12 +37,19 @@ class NonogramBoard(object):
         self._init_islands(islands)
     
     def _init_tiles(self):
-        #self._tiles = [[TileType.EMPTY for j in range(0, self.down)] for i in range(0, self.across)]
         self._tiles = [[TileType.EMPTY for x in range(self.across)] for y in range(self.down)]
 
     def _init_islands(self, islands):
         self._across_islands = [[NonogramIsland(typ=IslandType.ACROSS, location=i, value=island_value) for island_value in i_row] for i, i_row in enumerate(islands['across'])]
         self._down_islands = [[NonogramIsland(typ=IslandType.DOWN, location=i, value=island_value) for island_value in i_row] for i, i_row in enumerate(islands['down'])]
+
+    @property
+    def across_islands(self):
+        return self._across_islands
+    
+    @property
+    def down_islands(self):
+        return self._down_islands
 
     def __repr__(self):
         a = self._print_across_islands()
