@@ -2,8 +2,10 @@ import unittest
 
 from test_board import TestBoard
 from test_line import TestLine
+from test_lineutil import TestPstateCombiGen
 from test_singlesolveline5x5 import TestSingleSolveLine5x5
 from test_singlesolveline15x15 import TestSingleSolveLine15x15
+
 from testutil import add_single_solve_test_cases
 
 import lines_5x5

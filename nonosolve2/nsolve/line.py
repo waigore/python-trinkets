@@ -1,7 +1,7 @@
 from enum import Enum
 
 from .lineisland import LineIsland
-
+from .lineutil import generate_pstate_combi
 from .board import TileType
 
 class LineOrientation(Enum):
@@ -32,7 +32,9 @@ class LineSolver(object):
 
         self._line_islands = self._create_line_islands(islands)
         for island in self._line_islands:
-            island.init()
+            island.init() #ask each island to calculate its constraint zones and generate possible states
+        
+        self._generate_line_possible_states()
     
     @staticmethod
     def from_board(board, line_orientation, location):
@@ -63,51 +65,74 @@ class LineSolver(object):
     
     def get_islands_after(self, position):
         return self._line_islands[position+1:]
+    
+    def _generate_line_possible_states(self):
+        pstate_matrix = [i.possible_states for i in self._line_islands]
+        line_pstate_combis = generate_pstate_combi(pstate_matrix)
+        invalid_line_pstates = []
+        
+        for line_pstate, island_blocks in line_pstate_combis.items():
+            if not self.line_pstate_valid(line_pstate, island_blocks):
+                invalid_line_pstates.append(line_pstate)
+                continue
+            for i, island_block in enumerate(island_blocks):
+                line_island = self._line_islands[i]
+                line_island.link_line_possible_state(island_block, line_pstate)
+        
+        for ip in invalid_line_pstates:
+            line_pstate_combis.pop(ip, None)
 
-    def island_state_valid(self, island_pos, state): #tuple of island values
-        hypothetical_line = list(self._line)
-        for coord in state:
-            t = self._line[coord]
-            if t == TileType.CROSSED:
-                return False
-            hypothetical_line[coord] = TileType.FILLED
+        self.line_pstate_map = line_pstate_combis #(3, 4, 6, 7, 8, 9, 10, 13, 14) -> [(3,), (4,), (6, 7, 8, 9, 10), (13, 14)]
 
-        if not self._line_filled_count_consistent(hypothetical_line):
+    def prune_line_possible_states(self):
+        inconsistent_line_pstates = []
+        for line_pstate, island_blocks in self.line_pstate_map.items():
+            if self.line_pstate_consistent_with_board(line_pstate):
+                continue
+            inconsistent_line_pstates.append(line_pstate)
+            for i, island_block in enumerate(island_blocks):
+                line_island = self._line_islands[i]
+                line_island.prune_line_possible_state(island_block, line_pstate)
+        
+        for bp in inconsistent_line_pstates:
+            self.line_pstate_map.pop(bp, None)
+
+    def line_pstate_blocked(self, line_pstate):
+        return any(self._line[coord] == TileType.CROSSED for coord in line_pstate)
+
+    def line_pstate_valid(self, line_pstate, island_blocks):       
+        unique_fills = set(line_pstate)
+        if len(unique_fills) != len(line_pstate):
             return False
-
-        filled_islands = self._extract_filled_islands(hypothetical_line)
-        for filled_island in filled_islands:
-            if any(tile in state for tile in filled_island) and len(filled_island) > len(state):
+        
+        for i, island_block in enumerate(island_blocks):
+            if i == len(island_blocks) - 1:
+                continue
+            last_filled = island_block[-1]
+            next_filled = island_blocks[i+1][0]
+            if next_filled - last_filled < 2:
                 return False
-
+        
         return True
 
-    def _line_filled_count_consistent(self, line):
-        expected_filled_cnt = sum(i.value for i in self._line_islands)
-        actual_filled_cnt = line.count(TileType.FILLED)
-        return actual_filled_cnt <= expected_filled_cnt
-
-    def _extract_filled_islands(self, line):
-        filled_islands = []
-        is_island = False
-        curr_island = []
-        for i, t in enumerate(line):
-            if t == TileType.FILLED:
-                if not is_island:
-                    is_island = True
-                curr_island.append(i)
-            else:
-                is_island = False
-                if curr_island:
-                    filled_islands.append(curr_island)
-                    curr_island = []
-        if curr_island:
-            filled_islands.append(curr_island)
-        return filled_islands
+    def line_pstate_consistent_with_board(self, line_pstate):
+        if self.line_pstate_blocked(line_pstate):
+            return False
+        
+        hypothetical_line = list(self._line)
+        for coord in line_pstate:
+            hypothetical_line[coord] = TileType.FILLED
+        
+        actual_fills = len([t for t in hypothetical_line if t == TileType.FILLED])
+        expected_fills = sum(i.value for i in self._line_islands)
+        if actual_fills != expected_fills:
+            return False
+        
+        return True
 
     def solve(self):
+        self.prune_line_possible_states()
         for island in self._line_islands:
-            island.generate_possible_states()
             island.recalc_constraint_zone()
         
         for i, t in enumerate(self._line):

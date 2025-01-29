@@ -12,8 +12,8 @@ class LineIsland(object):
         self._islands_left = self._solver.get_islands_before(self.position)
         self._islands_right = self._solver.get_islands_after(self.position)
 
-        self._possible_states = []
         self._init_constraint_zone()
+        self._init_possible_states()
 
     def _init_constraint_zone(self):
         def add_island_min_space(c, i):
@@ -26,23 +26,24 @@ class LineIsland(object):
         rightmost_pos = reduce(sub_island_min_space, self._islands_right, self.dimen-1)
         self._constraint_zone = tuple(range(leftmost_pos, rightmost_pos+1)) #inclusive
 
-    def generate_possible_states(self):
-        self._possible_states = []
+    def _init_possible_states(self):
+        self._possible_state_map = {}
         for start_pos in self._constraint_zone:
             state = tuple(range(start_pos, start_pos + self.value))
             if any (p not in self._constraint_zone for p in state):
                 continue
-            if not self._solver.island_state_valid(self.position, state):
-                continue
-            self._possible_states.append(state)
+            self._possible_state_map[state] = [] #(3,) -> (3, 4, 6, 7, 8, 9, 10, 13, 14)
 
-    def prune_possible_states(self, states):
-        for state in states:
-            self._possible_states.remove(state)
+    def link_line_possible_state(self, p_state, l_state):
+        self._possible_state_map[p_state].append(l_state)
+    
+    def prune_line_possible_state(self, p_state, l_state):
+        self._possible_state_map[p_state].remove(l_state)
 
     def recalc_constraint_zone(self):
+        states = self.valid_states
         def claimable(pos):
-            return any(pos in possible_state for possible_state in self._possible_states)
+            return any(pos in possible_state for possible_state in states)
 
         new_constraint_zone = tuple(pos for pos in self._constraint_zone if claimable(pos))
         self._constraint_zone = new_constraint_zone
@@ -51,10 +52,18 @@ class LineIsland(object):
         return pos in self._constraint_zone
 
     def fillable(self, pos):
-        return all(pos in possible_state for possible_state in self._possible_states)
+        return all(pos in possible_state for possible_state in self.valid_states)
 
     def solved(self):
-        return len(self._possible_states) == 1
+        return len(self.valid_states) == 1
+
+    @property
+    def possible_states(self):
+        return self._possible_state_map.keys()
+    
+    @property
+    def valid_states(self):
+        return [p for p, v in self._possible_state_map.items() if len(v) > 0]
 
     @property
     def value(self):
