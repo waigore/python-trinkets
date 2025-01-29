@@ -44,7 +44,7 @@ def make_line_test_function(line_template, island_template, result):
         self.assertEqual(l, result.strip('\n'))
     return test
 
-def add_test_cases(cls, lines):
+def add_single_solve_test_cases(cls, lines):
     for line_construct in lines:
         line_template = line_construct['line']
         island_template = line_construct['islands']

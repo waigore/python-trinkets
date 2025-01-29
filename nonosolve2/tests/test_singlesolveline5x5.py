@@ -1,6 +1,6 @@
 import unittest
 
-class TestSolveLine5x5(unittest.TestCase):
+class TestSingleSolveLine5x5(unittest.TestCase):
     pass
 
 if __name__ == '__main__':
