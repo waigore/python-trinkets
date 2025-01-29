@@ -50,6 +50,10 @@ class NonogramBoard(object):
     @property
     def down_islands(self):
         return self._down_islands
+    
+    @property
+    def empty_count(self):
+        return sum(len([t for t in self._tiles[y] if t == TileType.EMPTY]) for y in range(self.down))
 
     def __repr__(self):
         a = self._print_across_islands()
@@ -80,6 +84,10 @@ class NonogramBoard(object):
     def __getitem__(self, key):
         x, y = key
         return self._tiles[y][x]
+    
+    def __setitem__(self, key, val):
+        x, y = key
+        self._tiles[y][x] = val
 
     def expected_fill_count(self):
         return sum([sum(i.value for i in a) for a in self._across_islands])

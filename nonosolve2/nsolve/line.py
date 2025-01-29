@@ -14,6 +14,8 @@ class LineSolver(object):
         self.line_orientation = line_orientation
         self.location = location
         self._update_count = 0
+        self._post_count = 0
+        self._constraint_zone_change_count = 0
 
         if line:
             self._dimen = len(line)
@@ -47,6 +49,22 @@ class LineSolver(object):
     def update_from_board(self, board):
         self._line = self._create_line_from_board(board)
         self._update_count += 1
+    
+    def post_to_board(self, board):
+        posts = []
+        for i, t in enumerate(self._line):
+            if self.line_orientation == LineOrientation.ACROSS:
+                x, y = i, self.location
+            else:
+                x, y = self.location, i
+
+            orig_tile = board[x, y]
+            if orig_tile == TileType.EMPTY and t != TileType.EMPTY:
+                board[x, y] = t
+                posts.append((x, y))
+        
+        self._post_count = 0
+        return posts 
 
     def _create_line_from_board(self, board):
         line = []
@@ -125,7 +143,7 @@ class LineSolver(object):
             hypothetical_line[coord] = TileType.FILLED
         
         actual_fills = len([t for t in hypothetical_line if t == TileType.FILLED])
-        expected_fills = sum(i.value for i in self._line_islands)
+        expected_fills = self.expected_fill_count
         if actual_fills != expected_fills:
             return False
         
@@ -150,6 +168,11 @@ class LineSolver(object):
                 self._post_count += 1
 
         self._update_count = 0
+        return self.post_count > 0
+
+    @property
+    def solved(self):
+        return not any(t for t in self._line if t == TileType.EMPTY)
 
     @property
     def constraint_zone_change_count(self):
@@ -162,6 +185,14 @@ class LineSolver(object):
     @property
     def update_count(self):
         return self._update_count
+    
+    @property
+    def expected_fill_count(self):
+        return sum(i.value for i in self._line_islands)
+
+    @property
+    def actual_fill_count(self):
+        return len([t for t in self._line if t == TileType.FILLED])
 
     @property
     def dirty(self):
