@@ -46,7 +46,10 @@ class LineIsland(object):
             return any(pos in possible_state for possible_state in states)
 
         new_constraint_zone = tuple(pos for pos in self._constraint_zone if claimable(pos))
+        old_len = len(self._constraint_zone)
+        new_len = len(new_constraint_zone)
         self._constraint_zone = new_constraint_zone
+        return old_len - new_len
 
     def claims(self, pos):
         return pos in self._constraint_zone

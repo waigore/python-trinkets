@@ -13,7 +13,7 @@ class LineSolver(object):
         self._board = board
         self.line_orientation = line_orientation
         self.location = location
-        self._dirty = True
+        self._update_count = 0
 
         if line:
             self._dimen = len(line)
@@ -27,7 +27,7 @@ class LineSolver(object):
                 islands = self._board.across_islands[self.location]
             else:
                 raise ValueError("Unknown line orientation: " + self.line_orientation)
-
+            
             self.update_from_board(self._board)
 
         self._line_islands = self._create_line_islands(islands)
@@ -46,6 +46,7 @@ class LineSolver(object):
 
     def update_from_board(self, board):
         self._line = self._create_line_from_board(board)
+        self._update_count += 1
 
     def _create_line_from_board(self, board):
         line = []
@@ -132,8 +133,10 @@ class LineSolver(object):
 
     def solve(self):
         self.prune_line_possible_states()
+        self._constraint_zone_change_count = 0
+        self._post_count = 0
         for island in self._line_islands:
-            island.recalc_constraint_zone()
+            self._constraint_zone_change_count += island.recalc_constraint_zone()
         
         for i, t in enumerate(self._line):
             if t != TileType.EMPTY:
@@ -141,14 +144,28 @@ class LineSolver(object):
             claims = tuple(island for island in self._line_islands if island.claims(i))
             if len(claims) == 0:
                 self._line[i] = TileType.CROSSED
+                self._post_count += 1
             elif len(claims) == 1 and claims[0].fillable(i):
                 self._line[i] = TileType.FILLED
-            
-        self._dirty = False
+                self._post_count += 1
+
+        self._update_count = 0
+
+    @property
+    def constraint_zone_change_count(self):
+        return self._constraint_zone_change_count
+    
+    @property
+    def post_count(self):
+        return self._post_count
+
+    @property
+    def update_count(self):
+        return self._update_count
 
     @property
     def dirty(self):
-        return self._dirty
+        return self._update_count > 0
 
     def __repr__(self):
         l = self._print_line_with_islands()
