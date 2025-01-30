@@ -28,7 +28,7 @@ class TestNonogramSolve(unittest.TestCase):
         solver = NonogramSolver.from_board(board)
         self.assertFalse(solver.solved)
 
-        solver.solve()
+        solver.solve_no_steps()
         self.assertTrue(solver.solved)
         b = str(board)
         self.assertEqual(b, """

@@ -8,6 +8,13 @@ class LineOrientation(Enum):
     ACROSS = 1
     DOWN = 2
 
+    def pretty(self):
+        if self == LineOrientation.ACROSS:
+            s = 'across'
+        else:
+            s = 'down'
+        return s
+
 class LineSolver(object):
     def __init__(self, board=None, line_orientation=LineOrientation.ACROSS, location=None, line=None, islands=None):
         self._board = board
